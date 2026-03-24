@@ -19,7 +19,7 @@ const Hero = () => {
       </div>
 
       {/* Hero Content — left side */}
-      <div className="relative z-10 flex items-center h-full">
+      <div className="relative z-10 flex items-center h-full my-5 ">
         <div className="containerpadding container mx-auto  w-full">
           <div className="max-w-3xl flex flex-col gap-6">
 
