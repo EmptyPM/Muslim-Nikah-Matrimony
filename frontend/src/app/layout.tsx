@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono,Poppins } from "next/font/google";
+import { Geist, Geist_Mono,Poppins,Andada_Pro } from "next/font/google";
 import "./globals.css";
 import Nav from "@/components/ui/navbar/Nav";
 
@@ -19,6 +19,12 @@ const poppins = Poppins({
   weight: ["400", "500", "600", "700"],
 });
 
+const andadaPro = Andada_Pro({
+  variable: "--font-andada-pro",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
 export const metadata: Metadata = {
   title: "Muslim Nikah Matrimony",
   description: "Find your perfect match in a halal way",
@@ -32,7 +38,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} ${andadaPro.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Nav />

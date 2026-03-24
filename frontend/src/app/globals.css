@@ -132,6 +132,9 @@
 .font-poppins {
   font-family: var(--font-poppins), sans-serif;
 }
+.font-andada-pro {
+  font-family: var(--font-andada-pro), sans-serif;
+}
 .title {
   @apply text-[30px] sm:text-[36px] md:text-[42px] lg:text-[52px] xl:text-[60px] 2xl:text-[64px];
 }

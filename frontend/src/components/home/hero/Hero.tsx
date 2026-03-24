@@ -33,10 +33,10 @@ const Hero = () => {
             <h1 className="text-5xl lg:text-6xl xl:text-[75px] font-semibold text-white font-poppins leading-tight">
               Find a Meaningful <br />
               Match with{' '}
-              <span className="text-[#DB9D30] italic">Trust,</span>
+              <span className="text-[#DB9D30] font-andada-pro font-bold">Trust,</span>
               <br />
               Privacy &{' '}
-              <span className="text-[#DB9D30] italic">Faith</span>
+              <span className="text-[#DB9D30] font-andada-pro font-bold">Faith</span>
             </h1>
 
             {/* Description */}
