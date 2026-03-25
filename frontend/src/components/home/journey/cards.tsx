@@ -66,7 +66,7 @@ function JourneyCard({
 const JourneyCards = () => {
   return (
     <section className="containerpadding container mx-auto bg-white">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4 lg:gap-5 xl:gap-8">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4 lg:gap-5 xl:gap-8">
         {STEPS.map((item) => (
           <JourneyCard key={item.step} {...item} />
         ))}

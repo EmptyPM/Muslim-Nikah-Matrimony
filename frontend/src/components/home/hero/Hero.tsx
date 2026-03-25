@@ -27,7 +27,7 @@ const Hero = () => {
       </div>
 
       {/* Hero Content — left side */}
-      <div className="relative z-10 flex items-center h-full my-5 ">
+      <div className="relative z-10 flex items-center h-full  my-[20px] sm:my-[30px] md:my-[40px] lg:my-[50px] xl:my-[50px] 2xl:my-[50px]  ">
         <div className="containerpadding container mx-auto  w-full">
           <div className="max-w-3xl flex flex-col gap-4">
             {/* Badge */}
@@ -36,7 +36,7 @@ const Hero = () => {
             </div>
 
             {/* Heading */}
-            <h1 className="text-5xl lg:text-6xl xl:text-[75px] font-semibold text-white font-poppins ">
+            <h1 className="text-4xl lg:text-6xl xl:text-[75px] font-semibold text-white font-poppins ">
               Find a Meaningful <br />
               Match with{" "}
               <span className="text-[#DB9D30] font-aref-ruqaa-ink font-bold">
