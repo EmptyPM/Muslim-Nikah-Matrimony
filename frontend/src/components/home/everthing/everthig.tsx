@@ -12,6 +12,29 @@ const columnArtImgRight =
 const EverythingSection = () => {
   return (
     <section className="relative w-full overflow-hidden bg-[#E6EEEC] margin-y py-10">
+      {/* Top-right corner ornament */}
+      <div
+        className="pointer-events-none absolute right-0 top-0 z-0 select-none"
+        aria-hidden
+      >
+        <img
+          src="/images/genuine/top corner.svg"
+          alt=""
+          className="h-auto w-[min(18vw,160px)] object-contain"
+        />
+      </div>
+
+      {/* Bottom-left corner ornament */}
+      <div
+        className="pointer-events-none absolute bottom-0 left-0 z-0 select-none"
+        aria-hidden
+      >
+        <img
+          src="/images/genuine/bottom.svg"
+          alt=""
+          className="h-auto w-[min(18vw,160px)] object-contain"
+        />
+      </div>
       {/* Left column art — two stacked copies */}
       <div
         className="pointer-events-none absolute inset-y-0 left-0 z-0 flex min-h-0 flex-col select-none"
