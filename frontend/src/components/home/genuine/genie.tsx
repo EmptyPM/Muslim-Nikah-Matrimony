@@ -1,6 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import GenuineProfileCards from "@/components/home/genuine/card";
+import MainButton from "@/components/ui/mainbtn";
 
 const COLUMN_ART_SRC = "/images/genuine/column-art.svg";
 
@@ -65,6 +66,15 @@ const GenuineSection = () => {
         {/* Profiles grid  */}
         <div className="mt-12">
           <GenuineProfileCards />
+        </div>
+
+        <div className="mt-10 flex justify-center">
+          <MainButton
+            type="button"
+            className="text-base font-medium px-8 py-3  lg:px-15 lg:py-3 font-poppins"
+          >
+            More Profiles
+          </MainButton>
         </div>
       </div>
     </section>

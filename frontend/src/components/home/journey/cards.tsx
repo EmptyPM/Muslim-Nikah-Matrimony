@@ -47,14 +47,14 @@ function JourneyCard({
           <path d={CARD_PATH} fill="#397466" />
         </svg>
 
-        <div className="relative z-10 flex h-full flex-col  items-center px-7 pb-12 pt-14 text-center text-white sm:px-8 sm:pt-16">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#DB9D30] text-lg font-bold text-white shadow-sm">
+        <div className="relative z-10 flex h-full flex-col  items-center px-7 pb-12 pt-3 text-center text-white sm:px-8 sm:pt-16">
+          <div className="flex h-9 w-9 lg:h-11 lg:w-11 shrink-0 items-center justify-center rounded-full bg-[#DB9D30] text-lg font-bold text-white shadow-sm">
             {step}
           </div>
-          <h3 className="font-poppins mt-10 lg:mt-10 xl:mt-12 subtitle font-medium ">
+          <h3 className="font-poppins mt-0 lg:mt-10 xl:mt-12 subtitle font-medium ">
             {title}
           </h3>
-          <p className="font-aref-ruqaa-ink mt-3 max-w-[220px] paragraph  text-white ">
+          <p className="font-aref-ruqaa-ink mt-0 lg:mt-5 max-w-[320px] paragraph  text-white ">
             {description}
           </p>
         </div>

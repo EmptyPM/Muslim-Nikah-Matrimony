@@ -31,7 +31,7 @@ const Hero = () => {
         <div className="containerpadding container mx-auto  w-full">
           <div className="max-w-3xl flex flex-col gap-4">
             {/* Badge */}
-            <div className="inline-flex w-fit items-center gap-2 bg-white/15 backdrop-blur-sm border text-[20px] border-white/30 text-white font-poppins text-sm font-normal px-6 py-2 rounded-full">
+            <div className="inline-flex w-fit items-center gap-2 bg-white/15 backdrop-blur-sm border title-sub-top border-white/30 text-white font-poppins text-sm font-normal px-6 py-2 rounded-full">
               Privacy-First Platform
             </div>
 

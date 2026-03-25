@@ -5,6 +5,7 @@ import JourneyCards from '@/components/home/journey/cards'
 import SafetyHeader from '@/components/home/safety/header'
 import SafetyCards from '@/components/home/safety/cards'
 import GenuineSection from '@/components/home/genuine/genie'
+import EverythingSection from '@/components/home/everthing/everthig'
 
 function page() {
   return (
@@ -15,6 +16,7 @@ function page() {
       <GenuineSection />
       <SafetyHeader />
       <SafetyCards />
+      <EverythingSection />
       
     </main>
   )

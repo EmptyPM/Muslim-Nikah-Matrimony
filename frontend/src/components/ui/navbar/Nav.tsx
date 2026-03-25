@@ -34,7 +34,7 @@ const Nav = () => {
      'text-[#DB9D30]  hover:text-[#DB9D30]/80'
 
   return (
-    <div className="fixed top-5 left-0 right-0 z-50 flex justify-center containerpadding container mx-auto">
+    <div className="fixed top-5 left-0 right-0 z-100 flex justify-center containerpadding container mx-auto ">
       <div className="w-full flex flex-col gap-2">
         <nav className="w-full backdrop-blur-md bg-[#4B7F73]/50 border border-white/15 rounded-full shadow-2xl shadow-black/30">
           <div className="px-4 sm:px-6 lg:px-10">
