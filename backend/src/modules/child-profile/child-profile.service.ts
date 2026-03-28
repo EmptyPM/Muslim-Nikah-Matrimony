@@ -76,6 +76,20 @@ export class ChildProfileService {
     return { success: true, data: updated };
   }
 
+  async boostProfile(userId: string, profileId: string, days: number) {
+    if (![10, 15, 30].includes(days)) throw new Error('Invalid boost duration. Choose 10, 15 or 30 days.');
+    const profile = await this.findOwnedProfile(userId, profileId);
+    if (profile.status !== 'ACTIVE') throw new Error('Only active profiles can be boosted.');
+    const boostExpiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+    const updated = await this.prisma.childProfile.update({
+      where: { id: profile.id },
+      data: { boostExpiresAt } as any,
+      include: { subscription: true },
+    });
+    this.logger.log(`Profile BOOSTED: ${profileId} for ${days} days until ${boostExpiresAt}`);
+    return { success: true, data: updated, boostExpiresAt };
+  }
+
   async getMyProfiles(userId: string) {
     const profiles = await this.prisma.childProfile.findMany({
       where: { userId },

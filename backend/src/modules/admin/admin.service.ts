@@ -116,7 +116,8 @@ export class AdminService {
         city: true, country: true, height: true, education: true,
         occupation: true, ethnicity: true, civilStatus: true,
         createdAt: true, status: true,
-        showRealName: true, nickname: true,   // privacy fields
+        showRealName: true, nickname: true,
+        boostExpiresAt: true,
       } as any,
       orderBy: { createdAt: 'desc' },
     });
@@ -126,16 +127,17 @@ export class AdminService {
       .map(p => {
         const dob = new Date(p.dateOfBirth);
         const age = Math.floor((now.getTime() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-        // Apply nickname privacy: replace name if member chose to hide real name
         const displayName = !p.showRealName && p.nickname ? p.nickname : p.name;
-        const { showRealName, nickname, ...rest } = p;   // strip privacy flags from output
-        return { ...rest, name: displayName, age };
+        const isVip = p.boostExpiresAt && new Date(p.boostExpiresAt) > now;
+        const { showRealName, nickname, boostExpiresAt, ...rest } = p;
+        return { ...rest, name: displayName, age, isVip };
       })
       .filter(p => {
         if (filters.minAge && p.age < filters.minAge) return false;
         if (filters.maxAge && p.age > filters.maxAge) return false;
         return true;
-      });
+      })
+      .sort((a, b) => (b.isVip === a.isVip ? 0 : b.isVip ? 1 : -1));
 
     return { success: true, data: filtered, total: filtered.length };
   }

@@ -109,6 +109,7 @@ model ChildProfile {
   contactVisible      Boolean        @default(true)
   showRealName        Boolean        @default(true)   // if false, nickname is shown publicly
   nickname            String?                         // shown instead of real name when showRealName=false
+  boostExpiresAt      DateTime?                       // if set and in future, profile is boosted (shown at top)
   status              ProfileStatus  @default(DRAFT)
 
   // Field visibility controls

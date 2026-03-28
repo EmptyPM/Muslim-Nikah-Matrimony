@@ -82,6 +82,8 @@ export default function ProfilesPage() {
   const [initiating, setInitiating] = useState<string | null>(null);
   // Privacy per-profile: { [profileId]: { showRealName, nickname, saving } }
   const [privacy, setPrivacy] = useState<Record<string, { showRealName: boolean; nickname: string; saving: boolean }>>({});
+  // Boost per-profile: { [profileId]: { boosting, boostExpiresAt } }
+  const [boost, setBoost] = useState<Record<string, { boosting: boolean; boostExpiresAt?: string | null }>>({});
 
   const showToast = (text: string, ok = true) => {
     setToast({ text, ok });
@@ -99,12 +101,42 @@ export default function ProfilesPage() {
 
   // Initialise privacy state from loaded profiles
   useEffect(() => {
-    const init: Record<string, { showRealName: boolean; nickname: string; saving: boolean }> = {};
+    const initP: Record<string, { showRealName: boolean; nickname: string; saving: boolean }> = {};
+    const initB: Record<string, { boosting: boolean; boostExpiresAt?: string | null }> = {};
     profiles.forEach(p => {
-      init[p.id] = { showRealName: p.showRealName ?? true, nickname: p.nickname ?? '', saving: false };
+      initP[p.id] = { showRealName: p.showRealName ?? true, nickname: p.nickname ?? '', saving: false };
+      initB[p.id] = { boosting: false, boostExpiresAt: p.boostExpiresAt ?? null };
     });
-    setPrivacy(init);
+    setPrivacy(initP);
+    setBoost(initB);
   }, [profiles]);
+
+  const BOOST_PLANS = [
+    { days: 10, price: '$4.99', label: '10 Days', feature: 'Top listing for 10 days' },
+    { days: 15, price: '$7.99', label: '15 Days', feature: 'Top listing for 15 days', popular: true },
+    { days: 30, price: '$14.99', label: '30 Days', feature: 'Top listing for 30 days' },
+  ];
+
+  const purchaseBoost = async (profileId: string, days: number) => {
+    setBoost(prev => ({ ...prev, [profileId]: { ...prev[profileId], boosting: true } }));
+    try {
+      const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3002/api';
+      const token = localStorage.getItem('mn_token');
+      const res = await fetch(`${BASE}/profile/boost/${profileId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ days }),
+      });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.message ?? 'Boost failed'); }
+      const data = await res.json();
+      setBoost(prev => ({ ...prev, [profileId]: { boosting: false, boostExpiresAt: data.boostExpiresAt } }));
+      showToast(`Profile boosted for ${days} days! ✦ VIP badge is live.`);
+      load();
+    } catch (e: any) {
+      showToast(e.message ?? 'Failed to boost profile', false);
+      setBoost(prev => ({ ...prev, [profileId]: { ...prev[profileId], boosting: false } }));
+    }
+  };
 
   const savePrivacy = async (profileId: string) => {
     const ps = privacy[profileId];
@@ -512,6 +544,74 @@ export default function ProfilesPage() {
                     </div>
                   )}
                 </div>
+
+                {/* ── Boost Your Profile ─────────────────────────── */}
+                {p.status === 'ACTIVE' && boost[p.id] && (
+                  <div className="mx-4 mb-4 rounded-2xl border border-[#DB9D30]/30 bg-gradient-to-br from-[#FFFBF0] to-[#FFF8E7] p-4">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[#DB9D30] text-lg">⚡</span>
+                        <div>
+                          <p className="text-[13px] font-bold text-[#8B5E00] font-poppins">Boost Your Profile</p>
+                          <p className="text-[10px] text-[#A07830] font-poppins">Appear at the top with a gold VIP badge</p>
+                        </div>
+                      </div>
+                      {boost[p.id].boostExpiresAt && new Date(boost[p.id].boostExpiresAt!) > new Date() && (
+                        <span className="inline-flex items-center gap-1 bg-[#DB9D30] text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">
+                          ✦ ACTIVE VIP
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Active boost info */}
+                    {boost[p.id].boostExpiresAt && new Date(boost[p.id].boostExpiresAt!) > new Date() ? (
+                      <div className="bg-[#DB9D30]/10 rounded-xl px-3 py-2 text-[11px] text-[#8B5E00] font-poppins">
+                        ✦ VIP boost active until{' '}
+                        <strong>{new Date(boost[p.id].boostExpiresAt!).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</strong>
+                      </div>
+                    ) : (
+                      /* Plan cards */
+                      <div className="grid grid-cols-3 gap-2">
+                        {BOOST_PLANS.map(plan => (
+                          <div key={plan.days} className={`relative rounded-xl border-2 p-3 text-center cursor-pointer transition-all ${
+                            plan.popular
+                              ? 'border-[#DB9D30] bg-[#DB9D30]/8 shadow-sm'
+                              : 'border-[#DB9D30]/25 bg-white hover:border-[#DB9D30]/60'
+                          }`}>
+                            {plan.popular && (
+                              <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#DB9D30] text-white text-[8px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
+                                POPULAR
+                              </span>
+                            )}
+                            <p className="text-[11px] font-bold text-[#8B5E00] font-poppins">{plan.label}</p>
+                            <p className="text-[16px] font-extrabold text-[#DB9D30] font-poppins mt-0.5">{plan.price}</p>
+                            <p className="text-[9px] text-[#A07830] font-poppins mt-0.5 leading-tight">{plan.feature}</p>
+                            <button
+                              onClick={() => purchaseBoost(p.id, plan.days)}
+                              disabled={boost[p.id]?.boosting}
+                              className={`mt-2 w-full py-1.5 rounded-lg text-[10px] font-bold font-poppins transition-all disabled:opacity-50 ${
+                                plan.popular
+                                  ? 'bg-[#DB9D30] text-white hover:bg-[#c98b26] shadow-sm'
+                                  : 'bg-[#DB9D30]/15 text-[#8B5E00] hover:bg-[#DB9D30]/30 border border-[#DB9D30]/30'
+                              }`}
+                            >
+                              {boost[p.id]?.boosting ? (
+                                <span className="flex items-center justify-center gap-1">
+                                  <svg className="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                                  </svg>
+                                  Boosting…
+                                </span>
+                              ) : '⚡ Boost'}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Card footer actions */}
                 <div className="px-5 py-3 border-t border-gray-50 flex items-center justify-between gap-2">

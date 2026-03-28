@@ -10,6 +10,7 @@ type Profile = {
   id: string; memberId: string; name: string; gender: string; age: number;
   city: string; country: string; height: string; education: string;
   occupation: string; ethnicity: string; civilStatus: string; createdAt: string;
+  isVip?: boolean;
 };
 
 type Filters = {
@@ -337,17 +338,31 @@ export default function ProfilesListing() {
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                 {paginated.map(p => (
                   <div key={p.id} className="block group">
+                    {/* VIP badge for boosted profiles */}
+                    {p.isVip && (
+                      <div className="flex items-center gap-1.5 mb-1 px-1">
+                        <span className="inline-flex items-center gap-1 bg-gradient-to-r from-[#F5C518] to-[#DB9D30] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-sm tracking-wide animate-pulse">
+                          ✦ VIP BOOSTED
+                        </span>
+                      </div>
+                    )}
                     {/* Member ID badge above card */}
-                    <div className="flex items-center gap-1.5 mb-1.5 px-1">
-                      <span className="inline-flex items-center gap-1 bg-[#1C3B35]/8 text-[#1C3B35] text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-[#1C3B35]/20 tracking-widest group-hover:bg-[#1C3B35]/15 transition">
+                    <div className={`flex items-center gap-1.5 mb-1.5 px-1 ${p.isVip ? 'mt-0' : ''}`}>
+                      <span className={`inline-flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border tracking-widest group-hover:bg-[#1C3B35]/15 transition ${
+                        p.isVip
+                          ? 'bg-[#F5C518]/15 text-[#9A6E00] border-[#DB9D30]/40'
+                          : 'bg-[#1C3B35]/8 text-[#1C3B35] border-[#1C3B35]/20'
+                      }`}>
                         🪪 {p.memberId}
                       </span>
                     </div>
-                    <GenuineProfileCard 
-                        {...toCardProps(p)} 
-                        onChatClick={(e) => handleChatClick(e, p)}
-                        onViewClick={() => router.push(`/profiles/${p.id}`)}
-                    />
+                    <div className={p.isVip ? 'ring-2 ring-[#DB9D30]/60 rounded-[20px] shadow-lg shadow-[#DB9D30]/10' : ''}>
+                      <GenuineProfileCard
+                          {...toCardProps(p)}
+                          onChatClick={(e) => handleChatClick(e, p)}
+                          onViewClick={() => router.push(`/profiles/${p.id}`)}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
