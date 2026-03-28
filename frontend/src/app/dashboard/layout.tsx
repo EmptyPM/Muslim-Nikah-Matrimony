@@ -22,12 +22,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       .then((res) => {
         const hasActive = (res.data ?? []).some((s: any) => s.subscription?.status === 'ACTIVE');
         if (!hasActive) {
-          router.replace('/packages');
+          router.replace('/select-plan');
         } else {
           setChecking(false);
         }
       })
-      .catch(() => router.replace('/packages'));
+      .catch(() => router.replace('/select-plan'));
   }, [router]);
 
   if (checking) return (

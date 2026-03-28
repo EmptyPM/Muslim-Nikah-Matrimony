@@ -50,10 +50,10 @@ export default function LoginPage() {
       try {
         const subRes = await subscriptionApi.mySubscriptions();
         const hasActive = (subRes.data ?? []).some((s: any) => s.subscription?.status === 'ACTIVE');
-        router.push(hasActive ? '/dashboard/parent' : '/packages');
+        router.push(hasActive ? '/dashboard/parent' : '/select-plan');
       } catch {
         // If subscription check fails, go to packages to be safe
-        router.push('/packages');
+        router.push('/select-plan');
       }
     } catch (e: any) {
       setError(e.message ?? "Login failed. Check your credentials.");

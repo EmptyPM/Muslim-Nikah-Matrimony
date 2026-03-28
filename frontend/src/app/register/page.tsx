@@ -343,7 +343,7 @@ export default function RegisterPage() {
       localStorage.setItem("mn_token", res.token);
       localStorage.setItem("mn_user", JSON.stringify(res.user));
       // New users must select a package before accessing the dashboard
-      router.push("/packages");
+      router.push('/select-plan');
     } catch (e: any) {
       setError(e.message ?? "Registration failed. Please try again.");
     } finally {
