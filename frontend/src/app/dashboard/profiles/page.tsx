@@ -437,7 +437,7 @@ export default function ProfilesPage() {
 
                 {/* Card body */}
                 <div className="px-5 py-4 space-y-2">
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
                     <div className="flex items-center gap-1.5 text-gray-500">
                       <svg className="w-3.5 h-3.5 text-gray-300" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
@@ -547,18 +547,18 @@ export default function ProfilesPage() {
 
                 {/* ── Boost Your Profile ─────────────────────────── */}
                 {p.status === 'ACTIVE' && boost[p.id] && (
-                  <div className="mx-4 mb-4 rounded-2xl border border-[#DB9D30]/30 bg-gradient-to-br from-[#FFFBF0] to-[#FFF8E7] p-4">
+                  <div className="mx-3 mb-4 rounded-2xl border border-[#DB9D30]/30 bg-gradient-to-br from-[#FFFBF0] to-[#FFF8E7] p-3 sm:p-4">
                     {/* Header */}
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[#DB9D30] text-lg">⚡</span>
-                        <div>
-                          <p className="text-[13px] font-bold text-[#8B5E00] font-poppins">Boost Your Profile</p>
-                          <p className="text-[10px] text-[#A07830] font-poppins">Appear at the top with a gold VIP badge</p>
+                    <div className="flex flex-wrap items-start gap-2 mb-3">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className="text-[#DB9D30] text-base flex-shrink-0">⚡</span>
+                        <div className="min-w-0">
+                          <p className="text-[12px] sm:text-[13px] font-bold text-[#8B5E00] font-poppins leading-tight">Boost Your Profile</p>
+                          <p className="text-[9px] sm:text-[10px] text-[#A07830] font-poppins leading-tight">Appear at the top with a gold VIP badge</p>
                         </div>
                       </div>
                       {boost[p.id].boostExpiresAt && new Date(boost[p.id].boostExpiresAt!) > new Date() && (
-                        <span className="inline-flex items-center gap-1 bg-[#DB9D30] text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">
+                        <span className="inline-flex items-center gap-1 bg-[#DB9D30] text-white text-[9px] font-bold px-2 py-1 rounded-full shadow-sm flex-shrink-0">
                           ✦ ACTIVE VIP
                         </span>
                       )}
@@ -572,25 +572,25 @@ export default function ProfilesPage() {
                       </div>
                     ) : (
                       /* Plan cards */
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                         {BOOST_PLANS.map(plan => (
-                          <div key={plan.days} className={`relative rounded-xl border-2 p-3 text-center cursor-pointer transition-all ${
+                          <div key={plan.days} className={`relative rounded-xl border-2 p-2 sm:p-3 text-center cursor-pointer transition-all ${
                             plan.popular
                               ? 'border-[#DB9D30] bg-[#DB9D30]/8 shadow-sm'
                               : 'border-[#DB9D30]/25 bg-white hover:border-[#DB9D30]/60'
                           }`}>
                             {plan.popular && (
-                              <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#DB9D30] text-white text-[8px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
+                              <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#DB9D30] text-white text-[7px] sm:text-[8px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full whitespace-nowrap">
                                 POPULAR
                               </span>
                             )}
-                            <p className="text-[11px] font-bold text-[#8B5E00] font-poppins">{plan.label}</p>
-                            <p className="text-[16px] font-extrabold text-[#DB9D30] font-poppins mt-0.5">{plan.price}</p>
-                            <p className="text-[9px] text-[#A07830] font-poppins mt-0.5 leading-tight">{plan.feature}</p>
+                            <p className="text-[9px] sm:text-[11px] font-bold text-[#8B5E00] font-poppins leading-tight">{plan.label}</p>
+                            <p className="text-[13px] sm:text-[16px] font-extrabold text-[#DB9D30] font-poppins mt-0.5 leading-tight">{plan.price}</p>
+                            <p className="hidden sm:block text-[9px] text-[#A07830] font-poppins mt-0.5 leading-tight">{plan.feature}</p>
                             <button
                               onClick={() => purchaseBoost(p.id, plan.days)}
                               disabled={boost[p.id]?.boosting}
-                              className={`mt-2 w-full py-1.5 rounded-lg text-[10px] font-bold font-poppins transition-all disabled:opacity-50 ${
+                              className={`mt-1.5 sm:mt-2 w-full py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-[10px] font-bold font-poppins transition-all disabled:opacity-50 ${
                                 plan.popular
                                   ? 'bg-[#DB9D30] text-white hover:bg-[#c98b26] shadow-sm'
                                   : 'bg-[#DB9D30]/15 text-[#8B5E00] hover:bg-[#DB9D30]/30 border border-[#DB9D30]/30'
@@ -598,11 +598,10 @@ export default function ProfilesPage() {
                             >
                               {boost[p.id]?.boosting ? (
                                 <span className="flex items-center justify-center gap-1">
-                                  <svg className="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                  <svg className="w-2 h-2 animate-spin" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
                                   </svg>
-                                  Boosting…
                                 </span>
                               ) : '⚡ Boost'}
                             </button>

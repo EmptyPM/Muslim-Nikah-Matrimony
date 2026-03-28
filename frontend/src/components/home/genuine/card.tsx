@@ -174,9 +174,9 @@ const InfoRow = ({
     label: string;
     value: string | number;
 }) => (
-    <div className="flex justify-between items-center py-[6px]">
-        <span className="text-[12px] md:text-[14px] lg:text-[15px] 2xl:text-[16px] text-[#010806A1]/65 font-poppins">{label}</span>
-        <span className="text-[12px] md:text-[14px] lg:text-[15px] 2xl:text-[16px] font-medium text-[#010806CC]/80 font-poppins text-right  truncate">
+    <div className="flex justify-between items-start py-[5px] gap-2">
+        <span className="text-[12px] md:text-[13px] lg:text-[14px] text-[#010806A1]/65 font-poppins flex-shrink-0">{label}</span>
+        <span className="text-[12px] md:text-[13px] lg:text-[14px] font-medium text-[#010806CC]/80 font-poppins text-right break-words min-w-0">
             {value}
         </span>
     </div>
@@ -208,7 +208,7 @@ const GenuineProfileCard = ({
             </div>
 
             {/* Profile picture with decorative border */}
-            <div className="relative w-[110px] h-[110px] lg:w-[120px] lg:h-[120px] xl:w-[130px] xl:h-[130px] 2xl:w-[140px] 2xl:h-[140px] mx-auto mt-2 mb-3">
+            <div className="relative w-[90px] h-[90px] sm:w-[110px] sm:h-[110px] lg:w-[120px] lg:h-[120px] xl:w-[130px] xl:h-[130px] 2xl:w-[140px] 2xl:h-[140px] mx-auto mt-2 mb-3">
                 {/* SVG decorative frame */}
                 <div className="absolute inset-0 w-full h-full">
                     <DecorativeBorder />
@@ -279,11 +279,11 @@ const GenuineProfileCard = ({
 
             {/* CTA Buttons */}
             <div className="flex gap-2 w-full">
-                <button onClick={onViewClick} className="flex-1 bg-white hover:bg-gray-50 border border-gray-200 text-[#1C3B35] transition-all duration-150 title-sub-top font-medium font-poppins py-2 rounded-xl shadow-sm">
+                <button onClick={onViewClick} className="flex-1 bg-white hover:bg-gray-50 border border-gray-200 text-[#1C3B35] transition-all duration-150 text-[12px] sm:text-[13px] lg:text-[14px] font-medium font-poppins py-2 rounded-xl shadow-sm">
                     View
                 </button>
-                <button onClick={onChatClick} className="flex-[1.5] bg-[#1B6B4A] hover:bg-[#155a3d] active:scale-[0.98] transition-all duration-150 text-white title-sub-top font-medium font-poppins py-2 rounded-xl shadow-sm flex items-center justify-center gap-1.5">
-                    <span className="text-sm">💬</span> Chat
+                <button onClick={onChatClick} className="flex-[1.5] bg-[#1B6B4A] hover:bg-[#155a3d] active:scale-[0.98] transition-all duration-150 text-white text-[12px] sm:text-[13px] lg:text-[14px] font-medium font-poppins py-2 rounded-xl shadow-sm flex items-center justify-center gap-1">
+                    <span className="text-xs sm:text-sm">💬</span> Chat
                 </button>
             </div>
         </div>
@@ -315,7 +315,7 @@ const GenuineProfileCards = () => {
     };
 
     return (
-        <div className="grid grid-cols-2 gap-2 md:gap-6 sm:grid-cols-2 xl:grid-cols-4 justify-items-center">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-6 xl:grid-cols-4 justify-items-center">
             {dummyProfiles.map((profile, idx) => (
                 <GenuineProfileCard 
                     key={idx} 

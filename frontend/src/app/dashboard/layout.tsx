@@ -189,13 +189,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen flex font-poppins bg-[#F4F6F9]">
       {/* ── Desktop Sidebar ── */}
-      <aside className="w-60 bg-[#1C3B35] text-white flex flex-col shadow-2xl min-h-screen hidden md:flex flex-shrink-0">
+      <aside className="w-60 bg-[#1C3B35] text-white flex flex-col shadow-2xl min-h-screen hidden lg:flex flex-shrink-0">
         <SidebarContent />
       </aside>
 
       {/* ── Mobile Overlay Sidebar ── */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
+        <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
           <aside className="absolute left-0 top-0 bottom-0 w-64 bg-[#1C3B35] text-white flex flex-col shadow-2xl">
             <SidebarContent />
@@ -208,14 +208,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         {/* Top header */}
         <header className="bg-white border-b border-gray-100 px-6 py-3.5 flex items-center justify-between gap-4 flex-shrink-0">
           {/* Mobile hamburger */}
-          <button onClick={() => setMobileOpen(true)} className="md:hidden p-2 rounded-xl hover:bg-gray-50 transition text-gray-500">
+          <button onClick={() => setMobileOpen(true)} className="lg:hidden p-2 rounded-xl hover:bg-gray-50 transition text-gray-500">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
             </svg>
           </button>
 
           {/* Page breadcrumb */}
-          <div className="hidden md:flex items-center gap-2 text-sm text-gray-400">
+          <div className="hidden lg:flex items-center gap-2 text-sm text-gray-400">
             <span>Member</span>
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6" /></svg>
             <span className="text-gray-700 font-medium capitalize">
@@ -248,7 +248,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
         {/* Page content */}
         <main className="flex-1 overflow-auto">
-          <div className="px-6 md:px-8 py-7 max-w-7xl mx-auto">{children}</div>
+          <div className="px-4 sm:px-6 lg:px-8 py-5 lg:py-7 max-w-7xl mx-auto">{children}</div>
         </main>
       </div>
     </div>
