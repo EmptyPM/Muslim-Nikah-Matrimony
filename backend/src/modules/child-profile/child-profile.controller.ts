@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Put, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { ChildProfileService } from './child-profile.service';
 import { CreateChildProfileDto, UpdateChildProfileDto } from './dto/child-profile.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -17,6 +17,15 @@ export class ChildProfileController {
   @Put('update/:id')
   update(@CurrentUser() user: any, @Param('id') id: string, @Body() dto: UpdateChildProfileDto) {
     return this.service.update(user.userId, id, dto);
+  }
+
+  @Patch('privacy/:id')
+  updatePrivacy(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() body: { showRealName?: boolean; nickname?: string },
+  ) {
+    return this.service.updatePrivacy(user.userId, id, body);
   }
 
   @Get('my')

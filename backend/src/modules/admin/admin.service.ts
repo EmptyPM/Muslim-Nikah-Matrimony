@@ -109,14 +109,15 @@ export class AdminService {
     if (filters.occupation) where.occupation = { contains: filters.occupation, mode: 'insensitive' };
     if (filters.memberId) where.memberId = { contains: filters.memberId.toUpperCase(), mode: 'insensitive' };
 
-    const allProfiles = await this.prisma.childProfile.findMany({
+    const allProfiles: any[] = await this.prisma.childProfile.findMany({
       where,
       select: {
         id: true, memberId: true, name: true, gender: true, dateOfBirth: true,
         city: true, country: true, height: true, education: true,
         occupation: true, ethnicity: true, civilStatus: true,
         createdAt: true, status: true,
-      },
+        showRealName: true, nickname: true,   // privacy fields
+      } as any,
       orderBy: { createdAt: 'desc' },
     });
 
@@ -125,7 +126,10 @@ export class AdminService {
       .map(p => {
         const dob = new Date(p.dateOfBirth);
         const age = Math.floor((now.getTime() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-        return { ...p, age };
+        // Apply nickname privacy: replace name if member chose to hide real name
+        const displayName = !p.showRealName && p.nickname ? p.nickname : p.name;
+        const { showRealName, nickname, ...rest } = p;   // strip privacy flags from output
+        return { ...rest, name: displayName, age };
       })
       .filter(p => {
         if (filters.minAge && p.age < filters.minAge) return false;

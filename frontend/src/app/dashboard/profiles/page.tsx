@@ -113,11 +113,12 @@ export default function ProfilesPage() {
     try {
       const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3002/api';
       const token = localStorage.getItem('mn_token');
-      await fetch(`${BASE}/profile/update/${profileId}`, {
-        method: 'PUT',
+      const res = await fetch(`${BASE}/profile/privacy/${profileId}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ showRealName: ps.showRealName, nickname: ps.nickname }),
       });
+      if (!res.ok) throw new Error('Failed');
       showToast('Privacy settings saved!');
       load();
     } catch {

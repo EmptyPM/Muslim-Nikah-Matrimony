@@ -60,6 +60,22 @@ export class ChildProfileService {
     return { success: true, data: updated };
   }
 
+  async updatePrivacy(userId: string, profileId: string, data: { showRealName?: boolean; nickname?: string }) {
+    const profile = await this.findOwnedProfile(userId, profileId);
+
+    const updated = await this.prisma.childProfile.update({
+      where: { id: profile.id },
+      data: {
+        showRealName: data.showRealName,
+        nickname: data.nickname,
+      } as any,
+      include: { subscription: true },
+    });
+
+    this.logger.log(`Profile PRIVACY UPDATED: ${profileId} showRealName=${data.showRealName}`);
+    return { success: true, data: updated };
+  }
+
   async getMyProfiles(userId: string) {
     const profiles = await this.prisma.childProfile.findMany({
       where: { userId },
