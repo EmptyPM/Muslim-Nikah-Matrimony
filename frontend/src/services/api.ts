@@ -100,6 +100,18 @@ export const adminApi = {
   users: () => request<any>('/admin/users'),
   profiles: (status?: string) => request<any>(`/admin/profiles${status ? `?status=${status}` : ''}`),
 
+  // Analytics
+  getAnalytics: () => request<any>('/admin/analytics'),
+
+  // Chat Monitor
+  getMessages: (limit?: number) => request<any>(`/admin/messages${limit ? `?limit=${limit}` : ''}`),
+
+  // Boosts
+  getBoosts: () => request<any>('/admin/boosts'),
+  removeBoost: (id: string) => request<any>(`/admin/boosts/${id}`, { method: 'DELETE' }),
+  extendBoost: (id: string, days: number) =>
+    request<any>(`/admin/boosts/${id}/extend`, { method: 'PUT', body: JSON.stringify({ days }) }),
+
   // Packages
   getPackages: () => request<any>('/admin/packages'),
   createPackage: (body: {

@@ -66,6 +66,12 @@ export class AdminController {
   @Get('analytics')
   analytics() { return this.service.getAnalytics(); }
 
+  @Get('messages')
+  messages(@Query('limit') limit?: string) {
+    return this.service.getRecentMessages(limit ? parseInt(limit) : 100);
+  }
+
+
   // ─ Boosts ───────────────────────────────────────────────
   @Get('boosts')
   getBoosts() { return this.service.getBoosts(); }

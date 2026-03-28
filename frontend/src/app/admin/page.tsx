@@ -167,10 +167,12 @@ export default function AdminDashboard() {
   ];
 
   const quickActions = [
-    { label: 'Add New Profile', href: '/admin/profiles', icon: '👤' },
-    { label: 'Approve Users', href: '/admin/users', icon: '✅' },
-    { label: 'View payments', href: '/admin/payments', icon: '💳' },
-    { label: 'Manage packages', href: '/admin/packages', icon: '📦' },
+    { label: 'Add New Profile',  href: '/admin/profiles',  icon: '👤' },
+    { label: 'Approve Users',    href: '/admin/users',     icon: '✅' },
+    { label: 'View Payments',    href: '/admin/payments',  icon: '💳' },
+    { label: 'Manage Packages',  href: '/admin/packages',  icon: '📦' },
+    { label: 'Manage Boosts',    href: '/admin/boosts',    icon: '⚡' },
+    { label: 'View Analytics',   href: '/admin/analytics', icon: '📊' },
   ];
 
   const PER_PAGE = 8;

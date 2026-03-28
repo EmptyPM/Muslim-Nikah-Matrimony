@@ -152,6 +152,23 @@ export class AdminService {
     };
   }
 
+  // ─── Chat monitor ────────────────────────────────────────────────────────
+  async getRecentMessages(limit = 100) {
+    const messages = await this.prisma.chatMessage.findMany({
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        content: true,
+        createdAt: true,
+        readAt: true,
+        senderProfile: { select: { id: true, name: true, memberId: true, gender: true } },
+        receiverProfile: { select: { id: true, name: true, memberId: true, gender: true } },
+      },
+    });
+    return { success: true, data: messages };
+  }
+
   // ─── Public single profile (increments viewCount) ─────────────────
   async getPublicProfile(id: string) {
     const profile: any = await this.prisma.childProfile.findFirst({
