@@ -15,6 +15,8 @@ export type ProfileCardProps = {
     job: string;
     joinedDaysAgo: number;
     profileImage?: string;
+    memberId?: string;
+    isVip?: boolean;
     onChatClick?: (e: React.MouseEvent) => void;
     onViewClick?: (e: React.MouseEvent) => void;
 };
@@ -194,97 +196,120 @@ const GenuineProfileCard = ({
     job,
     joinedDaysAgo,
     profileImage,
+    memberId,
+    isVip,
     onChatClick,
     onViewClick,
 }: ProfileCardProps) => {
     return (
-        <div className="relative bg-white rounded-[20px] shadow-[0_4px_24px_rgba(0,0,0,0.10)] w-full flex-shrink-0 overflow-visible pt-4 pb-5 px-4">
-            {/* Private badge */}
-            <div className="absolute top-3 right-3 z-10">
-                <span className="flex items-center gap-1 bg-[#DB9D3030] border border-gray-200 rounded-full px-2.5 py-0.5 text-[11px] md:text-[13px] lg:text-[15px] 2xl:text-[16px] font-medium text-[#DB9D30] font-poppins shadow-sm">
-                    <span className="w-1.5 h-1.5 rounded-full  bg-[#DB9D30] inline-block" />
-                    {isPrivate ? "Private" : "Public"}
-                </span>
-            </div>
+        <div className="relative bg-white rounded-[20px] shadow-[0_4px_24px_rgba(0,0,0,0.10)] w-full flex-shrink-0 overflow-hidden pb-5">
 
-            {/* Profile picture with decorative border */}
-            <div className="relative w-[90px] h-[90px] sm:w-[110px] sm:h-[110px] lg:w-[120px] lg:h-[120px] xl:w-[130px] xl:h-[130px] 2xl:w-[140px] 2xl:h-[140px] mx-auto mt-2 mb-3">
-                {/* SVG decorative frame */}
-                <div className="absolute inset-0 w-full h-full">
-                    <DecorativeBorder />
+            {/* VIP Banner ─ full-width gold strip at top of card */}
+            {isVip ? (
+                <div className="w-full bg-gradient-to-r from-[#E8BE1A] to-[#DB9D30] text-white text-[9px] sm:text-[10px] font-extrabold text-center py-[5px] tracking-[0.15em] flex items-center justify-center gap-1.5 font-poppins">
+                    ✦ VIP BOOSTED
+                </div>
+            ) : (
+                /* Invisible spacer so non-VIP cards align exactly */
+                <div className="h-[21px] sm:h-[23px]" />
+            )}
+
+            <div className="px-4 pt-2">
+                {/* Member ID + Private badge row */}
+                <div className="flex items-center justify-between mb-2">
+                    {memberId ? (
+                        <span className={`inline-flex items-center gap-1 text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border tracking-widest ${
+                            isVip
+                                ? 'bg-[#F5C518]/15 text-[#9A6E00] border-[#DB9D30]/40'
+                                : 'bg-[#1C3B35]/8 text-[#1C3B35] border-[#1C3B35]/20'
+                        }`}>
+                            🪪 {memberId}
+                        </span>
+                    ) : <div />}
+                    <span className="flex items-center gap-1 bg-[#DB9D3030] border border-gray-200 rounded-full px-2.5 py-0.5 text-[10px] sm:text-[11px] font-medium text-[#DB9D30] font-poppins shadow-sm">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#DB9D30] inline-block" />
+                        {isPrivate ? "Private" : "Public"}
+                    </span>
                 </div>
 
-                {/* Profile image clipped inside the diamond shape */}
-                <div className="absolute inset-[25px] rounded-full overflow-hidden bg-gray-100">
-                    {profileImage ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                            src={profileImage}
-                            alt={name}
-                            className="w-full h-full object-cover"
-                        />
-                    ) : (
-                        /* Placeholder silhouette */
-                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                            <svg
-                                viewBox="0 0 80 80"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="w-full h-full"
-                            >
-                                <rect width="80" height="80" fill="#F3F4F6" />
-                                <ellipse cx="40" cy="32" rx="16" ry="16" fill="#D1D5DB" />
-                                <ellipse cx="40" cy="70" rx="26" ry="18" fill="#D1D5DB" />
-                            </svg>
+                {/* Profile picture with decorative border */}
+                <div className="relative w-[90px] h-[90px] sm:w-[110px] sm:h-[110px] lg:w-[120px] lg:h-[120px] xl:w-[130px] xl:h-[130px] 2xl:w-[140px] 2xl:h-[140px] mx-auto mt-1 mb-3">
+                    {/* SVG decorative frame */}
+                    <div className="absolute inset-0 w-full h-full">
+                        <DecorativeBorder />
+                    </div>
+
+                    {/* Profile image clipped inside the diamond shape */}
+                    <div className="absolute inset-[25px] rounded-full overflow-hidden bg-gray-100">
+                        {profileImage ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                                src={profileImage}
+                                alt={name}
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            /* Placeholder silhouette */
+                            <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                                <svg
+                                    viewBox="0 0 80 80"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="w-full h-full"
+                                >
+                                    <rect width="80" height="80" fill="#F3F4F6" />
+                                    <ellipse cx="40" cy="32" rx="16" ry="16" fill="#D1D5DB" />
+                                    <ellipse cx="40" cy="70" rx="26" ry="18" fill="#D1D5DB" />
+                                </svg>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Verified badge */}
+                    {isVerified && (
+                        <div className="absolute bottom-5 right-5 w-6 h-6 z-10">
+                            <VerifiedIcon />
                         </div>
                     )}
                 </div>
 
-                {/* Verified badge */}
-                {isVerified && (
-                    <div className="absolute bottom-5 right-5 w-6 h-6 z-10">
-                        <VerifiedIcon />
-                    </div>
-                )}
-            </div>
+                {/* Name & city */}
+                <div className="text-center mb-3">
+                    <h3 className="text-[15px] xl:text-[18px] 2xl:text-[20px] font-medium text-[#010806] font-poppins leading-tight">
+                        {name}
+                    </h3>
+                    <p className="text-[12px] xl:text-[14px] 2xl:text-[17px] text-gray-500 font-poppins mt-0.5">
+                        Live In{" "}
+                        <span className="text-[#22C55E] font-medium">{city}</span>
+                    </p>
+                </div>
 
-            {/* Name & city */}
-            <div className="text-center mb-3">
-                <h3 className="text-[15px] xl:text-[18px] 2xl:text-[20px] font-medium text-[#010806] font-poppins leading-tight">
-                    {name}
-                </h3>
-                <p className="text-[12px] xl:text-[14px] 2xl:text-[17px] text-gray-500 font-poppins mt-0.5">
-                    Live In{" "}
-                    <span className="text-[#22C55E] font-medium">{city}</span>
+                {/* Info rows */}
+                <div className="divide-gray-100">
+                    <InfoRow label="Age:" value={`${age} Years`} />
+                    <InfoRow label="Height:" value={height} />
+                    <InfoRow label="Marital Status:" value={maritalStatus} />
+                    <InfoRow label="Education:" value={education} />
+                    <InfoRow label="Job:" value={job} />
+                </div>
+
+                {/* Divider */}
+                <div className="border-t border-dashed border-gray-700 mt-2 mb-3" />
+
+                {/* Joined date */}
+                <p className="text-center text-[11px] lg:text-[13px] xl:text-[15px] 2xl:text-[17px] text-[#010806A1]/80 font-poppins mb-3">
+                    Joined {joinedDaysAgo} days ago
                 </p>
-            </div>
 
-        
-            {/* Info rows */}
-            <div className=" divide-gray-100">
-                <InfoRow label="Age:" value={`${age} Years`} />
-                <InfoRow label="Height:" value={height} />
-                <InfoRow label="Marital Status:" value={maritalStatus} />
-                <InfoRow label="Education:" value={education} />
-                <InfoRow label="Job:" value={job} />
-            </div>
-
-            {/* Divider */}
-            <div className="border-t border-dashed border-gray-700 mt-2 mb-3" />
-
-            {/* Joined date */}
-            <p className="text-center text-[11px] lg:text-[13px] xl:text-[15px] 2xl:text-[17px] text-[#010806A1]/80 font-poppins mb-3">
-                Joined {joinedDaysAgo} days ago
-            </p>
-
-            {/* CTA Buttons */}
-            <div className="flex gap-2 w-full">
-                <button onClick={onViewClick} className="flex-1 bg-white hover:bg-gray-50 border border-gray-200 text-[#1C3B35] transition-all duration-150 text-[12px] sm:text-[13px] lg:text-[14px] font-medium font-poppins py-2 rounded-xl shadow-sm">
-                    View
-                </button>
-                <button onClick={onChatClick} className="flex-[1.5] bg-[#1B6B4A] hover:bg-[#155a3d] active:scale-[0.98] transition-all duration-150 text-white text-[12px] sm:text-[13px] lg:text-[14px] font-medium font-poppins py-2 rounded-xl shadow-sm flex items-center justify-center gap-1">
-                    <span className="text-xs sm:text-sm">💬</span> Chat
-                </button>
+                {/* CTA Buttons */}
+                <div className="flex gap-2 w-full">
+                    <button onClick={onViewClick} className="flex-1 bg-white hover:bg-gray-50 border border-gray-200 text-[#1C3B35] transition-all duration-150 text-[12px] sm:text-[13px] lg:text-[14px] font-medium font-poppins py-2 rounded-xl shadow-sm">
+                        View
+                    </button>
+                    <button onClick={onChatClick} className="flex-[1.5] bg-[#1B6B4A] hover:bg-[#155a3d] active:scale-[0.98] transition-all duration-150 text-white text-[12px] sm:text-[13px] lg:text-[14px] font-medium font-poppins py-2 rounded-xl shadow-sm flex items-center justify-center gap-1">
+                        <span className="text-xs sm:text-sm">💬</span> Chat
+                    </button>
+                </div>
             </div>
         </div>
     );
