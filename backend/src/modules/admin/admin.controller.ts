@@ -1,5 +1,5 @@
 import { Controller, Post, Get, Put, Delete, Body, Query, Param, UseGuards } from '@nestjs/common';
-import { AdminService, ApprovePaymentDto, CreatePackageDto } from './admin.service';
+import { AdminService, ApprovePaymentDto, CreatePackageDto, UpdateSiteSettingsDto } from './admin.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard, Roles } from '../../common/guards/roles.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -12,6 +12,11 @@ export class PublicPackagesController {
   @Get('packages')
   getActivePackages(@Query('type') type?: string) {
     return this.service.getActivePackages(type);
+  }
+
+  @Get('settings')
+  getPublicSettings() {
+    return this.service.getSiteSettings();
   }
 
   @Get('profiles/public')
@@ -98,4 +103,13 @@ export class AdminController {
 
   @Delete('packages/:id')
   deletePackage(@Param('id') id: string) { return this.service.deletePackage(id); }
+
+  // ─── Site Settings ────────────────────────────────────────────
+  @Get('settings')
+  getSiteSettings() { return this.service.getSiteSettings(); }
+
+  @Put('settings')
+  updateSiteSettings(@Body() dto: UpdateSiteSettingsDto) {
+    return this.service.updateSiteSettings(dto);
+  }
 }

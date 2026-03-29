@@ -3,6 +3,7 @@ import { Geist, Geist_Mono,Poppins,Andada_Pro,Aref_Ruqaa_Ink } from "next/font/g
 import "./globals.css";
 import Nav from "@/components/ui/navbar/Nav";
 import Footer from "@/components/ui/footer/FooterWrapper";
+import TrafficBeacon from "@/components/ui/TrafficBeacon";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,6 +48,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} ${andadaPro.variable} ${arefRuqaaInk.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <TrafficBeacon />
         <Nav />
         {children}
         <Footer />

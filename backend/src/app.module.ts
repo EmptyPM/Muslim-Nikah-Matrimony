@@ -15,6 +15,7 @@ import { VisibilityModule } from './modules/visibility/visibility.module';
 import { RuleEngineModule } from './modules/rule-engine/rule-engine.module';
 import { SubscriptionCron } from './cron/subscription.cron';
 import { AppEventListener } from './events/app-events.listener';
+import { TrafficModule } from './modules/traffic/traffic.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { AppEventListener } from './events/app-events.listener';
     AdminModule,
     VisibilityModule,
     RuleEngineModule,
+    TrafficModule,
   ],
   providers: [SubscriptionCron, AppEventListener],
 })

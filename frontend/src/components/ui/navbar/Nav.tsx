@@ -19,9 +19,22 @@ const Nav = () => {
   ]
 
   // Read auth from localStorage on client
-  useEffect(() => {
+  const syncUser = () => {
     const stored = localStorage.getItem('mn_user')
-    if (stored) setUser(JSON.parse(stored))
+    setUser(stored ? JSON.parse(stored) : null)
+  }
+
+  useEffect(() => {
+    syncUser()
+    // Listen for cross-tab storage changes
+    window.addEventListener('storage', syncUser)
+    // Listen for same-tab auth changes (login / logout)
+    window.addEventListener('mn_auth_change', syncUser)
+    return () => {
+      window.removeEventListener('storage', syncUser)
+      window.removeEventListener('mn_auth_change', syncUser)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname])
 
   useEffect(() => { setMenuOpen(false) }, [pathname])
@@ -34,6 +47,7 @@ const Nav = () => {
     localStorage.removeItem('mn_token')
     localStorage.removeItem('mn_user')
     setUser(null)
+    window.dispatchEvent(new Event('mn_auth_change'))
     router.push('/')
   }
 

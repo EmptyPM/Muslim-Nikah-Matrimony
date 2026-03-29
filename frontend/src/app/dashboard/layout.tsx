@@ -88,6 +88,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const logout = () => {
     localStorage.removeItem('mn_token');
     localStorage.removeItem('mn_user');
+    window.dispatchEvent(new Event('mn_auth_change'));
     router.push('/login');
   };
 
@@ -233,7 +234,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
             <div className="w-px h-6 bg-gray-200" />
 
-            {/* User avatar */}
+            {/* User avatar + Logout */}
             <div className="flex items-center gap-2.5">
               <div className="h-9 w-9 rounded-full bg-[#1C3B35] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                 {user?.email?.[0]?.toUpperCase() ?? 'U'}
@@ -242,6 +243,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <p className="text-xs font-semibold text-gray-800 leading-none">{user?.email?.split('@')[0] ?? 'Member'}</p>
                 <p className="text-[10px] text-gray-400 mt-0.5">{user?.email ?? ''}</p>
               </div>
+              <button
+                onClick={logout}
+                title="Logout"
+                className="ml-1 flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-red-600 border border-gray-200 hover:border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-xl transition-all duration-150"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                <span className="hidden sm:inline">Logout</span>
+              </button>
             </div>
           </div>
         </header>

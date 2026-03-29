@@ -39,6 +39,7 @@ export default function LoginPage() {
       const res = await authApi.login(formData);
       localStorage.setItem("mn_token", res.token);
       localStorage.setItem("mn_user", JSON.stringify(res.user));
+      window.dispatchEvent(new Event('mn_auth_change'));
 
       // Admin skips subscription check
       if (res.user.role === 'ADMIN') {

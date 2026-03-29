@@ -25,6 +25,12 @@ export class InitiatePaymentDto {
 
   @IsOptional() @IsNumber()
   days?: number;
+
+  @IsOptional() @IsString()
+  packageId?: string;
+
+  @IsOptional() @IsNumber()
+  packageDurationDays?: number;
 }
 
 export class VerifyPaymentDto {
@@ -63,6 +69,8 @@ export class PaymentService {
         bankRef: dto.bankRef,
         bankSlipUrl: dto.bankSlipUrl,
         gatewayPayload: dto.purpose === 'BOOST' && dto.days ? { days: dto.days } : undefined,
+        packageId: dto.packageId ?? null,
+        packageDurationDays: dto.packageDurationDays ?? 30,
       },
     });
 
@@ -109,20 +117,28 @@ export class PaymentService {
     return { success: true, message: 'Payment verified and profile activated' };
   }
 
-  async activateSubscription(tx: any, childProfileId: string) {
+  async activateSubscription(tx: any, childProfileId: string, durationDays = 30, planName = 'standard') {
     const now = new Date();
     const end = new Date(now);
-    end.setDate(end.getDate() + 30);
+    end.setDate(end.getDate() + durationDays);
 
-    // Upsert subscription
+    // Upsert subscription with actual duration from the package
     await tx.subscription.upsert({
       where: { childProfileId },
-      update: { status: 'ACTIVE', startDate: now, endDate: end },
+      update: {
+        status: 'ACTIVE',
+        startDate: now,
+        endDate: end,
+        planDurationDays: durationDays,
+        planName,
+      },
       create: {
         childProfileId,
         status: 'ACTIVE',
         startDate: now,
         endDate: end,
+        planDurationDays: durationDays,
+        planName,
       },
     });
 
@@ -133,7 +149,7 @@ export class PaymentService {
     });
 
     this.events.emit('PROFILE_ACTIVATED', { profileId: childProfileId });
-    this.logger.log(`Profile ACTIVATED: ${childProfileId}`);
+    this.logger.log(`Profile ACTIVATED: ${childProfileId} for ${durationDays} days (until ${end.toISOString()})`);
   }
 
   async activateBoost(tx: any, childProfileId: string, days: number = 7) {

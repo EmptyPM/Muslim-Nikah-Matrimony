@@ -163,6 +163,10 @@ model Payment {
   status         PaymentStatus @default(PENDING)
   purpose        PaymentPurpose @default(SUBSCRIPTION)
 
+  // Package reference — lets us know duration at approval time
+  packageId             String?
+  packageDurationDays   Int?    @default(30)
+
   // Bank transfer
   bankRef        String?
   bankSlipUrl    String?
@@ -177,6 +181,7 @@ model Payment {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 }
+
 
 model ChatMessage {
   id               String       @id @default(uuid())
@@ -200,10 +205,24 @@ model Package {
   price            Float
   currency         String   @default("USD")
   durationDays     Int      @default(30)
-  features         String[] // list of feature strings
+  features         String[]
   isActive         Boolean  @default(true)
   sortOrder        Int      @default(0)
-  type             String   @default("SUBSCRIPTION") // "SUBSCRIPTION" or "BOOST"
+  type             String   @default("SUBSCRIPTION")
+
+  // Per-package discount
+  discountPct      Float?   // e.g. 25.0 = 25% off; null = no package discount
+  originalPrice    Float?   // strikethrough price; if null, auto-computed
+
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+}
+
+/// Single-row settings for site-wide configuration
+model SiteSettings {
+  id                  String   @id @default("singleton")
+  siteDiscountPct     Float    @default(0)
+  siteDiscountLabel   String   @default("")
+  siteDiscountActive  Boolean  @default(false)
+  updatedAt           DateTime @updatedAt
 }

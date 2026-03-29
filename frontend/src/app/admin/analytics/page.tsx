@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { adminApi } from '@/services/api';
+import dynamic from 'next/dynamic';
+
+// Dynamically import to avoid SSR issues with socket.io
+const LiveTrafficWidget = dynamic(() => import('@/components/admin/LiveTrafficWidget'), { ssr: false });
+
 
 /* ── Mini Spark Bar ───────────────────────────────────────── */
 function SparkBar({ value, max, color = '#1C3B35' }: { value: number; max: number; color?: string }) {
@@ -158,6 +163,9 @@ export default function AdminAnalyticsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {kpis.slice(4).map(k => <KpiCard key={k.label} {...k} />)}
       </div>
+
+      {/* ── Live Traffic ── */}
+      <LiveTrafficWidget />
 
       {/* Two-column row */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">

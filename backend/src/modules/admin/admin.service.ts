@@ -19,6 +19,14 @@ export class CreatePackageDto {
   @IsOptional() @IsBoolean() isActive?: boolean;
   @IsOptional() @IsNumber() sortOrder?: number;
   @IsOptional() @IsString() type?: string;
+  @IsOptional() @IsNumber() @Min(0) discountPct?: number;
+  @IsOptional() @IsNumber() @Min(0) originalPrice?: number;
+}
+
+export class UpdateSiteSettingsDto {
+  @IsOptional() @IsNumber() @Min(0) siteDiscountPct?: number;
+  @IsOptional() @IsString() siteDiscountLabel?: string;
+  @IsOptional() @IsBoolean() siteDiscountActive?: boolean;
 }
 
 @Injectable()
@@ -36,6 +44,17 @@ export class AdminService {
     const payment = await this.prisma.payment.findUnique({ where: { id: dto.paymentId } });
     if (!payment) throw new NotFoundException({ success: false, message: 'Payment not found', error_code: 'NOT_FOUND' });
 
+    // Look up the package for duration (fall back to stored value, then 30 days)
+    let durationDays = payment.packageDurationDays ?? 30;
+    let planName = 'standard';
+    if (payment.packageId) {
+      const pkg = await this.prisma.package.findUnique({ where: { id: payment.packageId } });
+      if (pkg) {
+        durationDays = pkg.durationDays;
+        planName = pkg.name;
+      }
+    }
+
     await this.prisma.$transaction(async (tx) => {
       await tx.payment.update({
         where: { id: payment.id },
@@ -45,13 +64,13 @@ export class AdminService {
         const days = (payment.gatewayPayload as any)?.days || 7;
         await this.paymentService.activateBoost(tx, payment.childProfileId, days);
       } else {
-        await this.paymentService.activateSubscription(tx, payment.childProfileId);
+        await this.paymentService.activateSubscription(tx, payment.childProfileId, durationDays, planName);
       }
     });
 
     this.events.emit('PAYMENT_SUCCESS', { paymentId: payment.id, profileId: payment.childProfileId, approvedBy: adminId });
-    this.logger.log(`Admin APPROVED payment: ${payment.id} by admin ${adminId}`);
-    return { success: true, message: 'Payment approved and profile activated' };
+    this.logger.log(`Admin APPROVED payment: ${payment.id} → ${durationDays} days subscription`);
+    return { success: true, message: `Payment approved — profile activated for ${durationDays} days` };
   }
 
   async getAllPayments(status?: string) {
@@ -267,13 +286,89 @@ export class AdminService {
     return { success: true, data: filtered, total: filtered.length };
   }
 
-  // ─── Packages ─────────────────────────────────────────────────────────────
-  async getActivePackages(type?: string) {
-    const packages = await this.prisma.package.findMany({
-      where: { isActive: true, ...(type ? { type } : {}) },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+  // ─── Site Settings ────────────────────────────────────────────────────────
+  async getSiteSettings() {
+    let settings = await this.prisma.siteSettings.findUnique({ where: { id: 'singleton' } });
+    if (!settings) {
+      settings = await this.prisma.siteSettings.create({
+        data: { id: 'singleton', siteDiscountPct: 0, siteDiscountLabel: '', siteDiscountActive: false },
+      });
+    }
+    return { success: true, data: settings };
+  }
+
+  async updateSiteSettings(dto: UpdateSiteSettingsDto) {
+    const settings = await this.prisma.siteSettings.upsert({
+      where: { id: 'singleton' },
+      create: {
+        id: 'singleton',
+        siteDiscountPct: dto.siteDiscountPct ?? 0,
+        siteDiscountLabel: dto.siteDiscountLabel ?? '',
+        siteDiscountActive: dto.siteDiscountActive ?? false,
+      },
+      update: {
+        ...(dto.siteDiscountPct !== undefined && { siteDiscountPct: dto.siteDiscountPct }),
+        ...(dto.siteDiscountLabel !== undefined && { siteDiscountLabel: dto.siteDiscountLabel }),
+        ...(dto.siteDiscountActive !== undefined && { siteDiscountActive: dto.siteDiscountActive }),
+      },
     });
-    return { success: true, data: packages };
+    return { success: true, data: settings };
+  }
+
+  // ─── Packages ─────────────────────────────────────────────────────────────
+  /**
+   * Discount stacking:
+   *  1. Package discount reduces originalPrice → pkgPrice (stored as `price`)
+   *  2. Site-wide discount is applied ON TOP of pkgPrice (compound)
+   *  Final = pkg.price * (1 - siteDiscPct/100)
+   */
+  private applyDiscount(pkg: any, siteDiscPct = 0, siteActive = false) {
+    const pkgPrice = pkg.price;                       // already package-discounted
+    const origPrice = pkg.originalPrice ?? pkg.price; // pre-discount price
+    const pkgDisc = pkg.discountPct ?? 0;
+
+    let finalPrice = pkgPrice;
+    let shownOrig = origPrice;
+    let effectiveDisc = pkgDisc;
+
+    if (siteActive && siteDiscPct > 0) {
+      // Stack: apply site discount on top of already-discounted price
+      finalPrice = Math.round(pkgPrice * (1 - siteDiscPct / 100) * 100) / 100;
+      // Effective % off the original price for display
+      effectiveDisc = pkgDisc > 0
+        ? Math.round((1 - finalPrice / origPrice) * 100)
+        : siteDiscPct;
+      shownOrig = origPrice > pkgPrice ? origPrice : pkgPrice;
+    }
+
+    if (finalPrice === pkgPrice && effectiveDisc === 0) return pkg;
+
+    return {
+      ...pkg,
+      originalPrice: shownOrig,
+      price: finalPrice,
+      effectiveDiscountPct: effectiveDisc,
+      pkgDiscountPct: pkgDisc,
+      siteDiscountPct: siteActive ? siteDiscPct : 0,
+    };
+  }
+
+  async getActivePackages(type?: string) {
+    const [packages, settings] = await Promise.all([
+      this.prisma.package.findMany({
+        where: { isActive: true, ...(type ? { type } : {}) },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      }),
+      this.prisma.siteSettings.findUnique({ where: { id: 'singleton' } }),
+    ]);
+    const siteDiscPct = settings?.siteDiscountPct ?? 0;
+    const siteActive = settings?.siteDiscountActive ?? false;
+    const label = settings?.siteDiscountLabel ?? '';
+    return {
+      success: true,
+      data: packages.map(p => this.applyDiscount(p, siteDiscPct, siteActive)),
+      siteDiscount: { active: siteActive, pct: siteDiscPct, label },
+    };
   }
 
   async getPackages(type?: string) {
@@ -296,15 +391,34 @@ export class AdminService {
         isActive: dto.isActive ?? true,
         sortOrder: dto.sortOrder ?? 0,
         type: dto.type ?? 'SUBSCRIPTION',
+        discountPct: dto.discountPct ?? null,
+        originalPrice: dto.originalPrice ?? null,
       },
     });
     return { success: true, data: pkg };
   }
 
-  async updatePackage(id: string, dto: Partial<CreatePackageDto>) {
+  async updatePackage(id: string, dto: Partial<CreatePackageDto> & { discountPct?: number | null; originalPrice?: number | null; type?: string }) {
     const existing = await this.prisma.package.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Package not found');
-    const pkg = await this.prisma.package.update({ where: { id }, data: dto as any });
+
+    // Build update data explicitly — using 'as any' drops null values silently
+    const data: any = {};
+    if (dto.name !== undefined) data.name = dto.name;
+    if (dto.description !== undefined) data.description = dto.description;
+    if (dto.price !== undefined) data.price = dto.price;
+    if (dto.currency !== undefined) data.currency = dto.currency;
+    if (dto.durationDays !== undefined) data.durationDays = dto.durationDays;
+    if (dto.features !== undefined) data.features = dto.features;
+    if (dto.isActive !== undefined) data.isActive = dto.isActive;
+    if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
+    if (dto.type !== undefined) data.type = dto.type;
+    // Allow null to CLEAR the discount (explicitly write null, not skip)
+    if ('discountPct' in dto) data.discountPct = dto.discountPct ?? null;
+    if ('originalPrice' in dto) data.originalPrice = dto.originalPrice ?? null;
+
+    const pkg = await this.prisma.package.update({ where: { id }, data });
+    this.logger.log(`Package updated: ${id} — price=${data.price ?? existing.price}, discountPct=${data.discountPct ?? existing.discountPct}`);
     return { success: true, data: pkg };
   }
 

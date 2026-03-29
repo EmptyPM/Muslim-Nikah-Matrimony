@@ -66,12 +66,23 @@ export const subscriptionApi = {
 
 // ─── Payment ───────────────────────────────────────────────────────────────
 export const paymentApi = {
-  initiate: (body: { childProfileId: string; amount: number; method: string; bankRef?: string; bankSlipUrl?: string; purpose?: string; days?: number; }) =>
+  initiate: (body: {
+    childProfileId: string;
+    amount: number;
+    method: string;
+    bankRef?: string;
+    bankSlipUrl?: string;
+    purpose?: string;
+    days?: number;
+    packageId?: string;
+    packageDurationDays?: number;
+  }) =>
     request<any>('/payment/initiate', { method: 'POST', body: JSON.stringify(body) }),
   verify: (body: { paymentId: string; gatewayRef: string }) =>
     request<any>('/payment/verify', { method: 'POST', body: JSON.stringify(body) }),
   myPayments: () => request<any>('/payment/my'),
 };
+
 
 // ─── Visibility ────────────────────────────────────────────────────────────
 export const visibilityApi = {
@@ -125,18 +136,27 @@ export const adminApi = {
   createPackage: (body: {
     name: string; description?: string; price: number; currency?: string;
     durationDays: number; features?: string[]; isActive?: boolean; sortOrder?: number;
+    discountPct?: number; originalPrice?: number;
   }) => request<any>('/admin/packages', { method: 'POST', body: JSON.stringify(body) }),
-  updatePackage: (id: string, body: Partial<{
-    name: string; description: string; price: number; currency: string;
-    durationDays: number; features: string[]; isActive: boolean; sortOrder: number;
-  }>) => request<any>(`/admin/packages/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  updatePackage: (id: string, body: {
+    name?: string; description?: string; price?: number; currency?: string;
+    durationDays?: number; features?: string[]; isActive?: boolean; sortOrder?: number;
+    type?: string; discountPct?: number | null; originalPrice?: number | null;
+  }) => request<any>(`/admin/packages/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   deletePackage: (id: string) => request<any>(`/admin/packages/${id}`, { method: 'DELETE' }),
+
+  // Site settings
+  getSiteSettings: () => request<any>('/admin/settings'),
+  updateSiteSettings: (body: { siteDiscountPct?: number; siteDiscountLabel?: string; siteDiscountActive?: boolean }) =>
+    request<any>('/admin/settings', { method: 'PUT', body: JSON.stringify(body) }),
 };
 
 // ─── Public Packages (no auth) ────────────────────────────────────────────
 export const packagesApi = {
   getActive: (type?: string) => request<any>(`/packages${type ? `?type=${type}` : ''}`),
+  getSettings: () => request<any>('/settings'),
 };
+
 
 // ─── Public Profiles (no auth) ────────────────────────────────────────────
 export const publicProfilesApi = {

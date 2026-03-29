@@ -3,6 +3,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminApi } from '@/services/api';
+import dynamic from 'next/dynamic';
+
+const LiveTrafficWidget = dynamic(() => import('@/components/admin/LiveTrafficWidget'), { ssr: false });
 
 /* ── Tiny live bar chart ──────────────────────────────────────────────── */
 const W = 320, H = 170, PAD = { t: 10, r: 10, b: 28, l: 30 };
@@ -312,6 +315,9 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* ── Live Traffic ── */}
+      <LiveTrafficWidget />
 
       {/* ── Top Viewed + Quick Actions ── */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">

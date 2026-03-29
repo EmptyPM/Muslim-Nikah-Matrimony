@@ -9,31 +9,50 @@ type Package = {
   id: string; name: string; description?: string; price: number;
   currency: string; durationDays: number; features: string[];
   isActive: boolean; sortOrder: number;
+  discountPct?: number | null;
+  originalPrice?: number | null;
+  effectiveDiscountPct?: number;
 };
+
+type SiteDiscount = { active: boolean; pct: number; label: string };
 
 const FALLBACK: Package[] = [
   {
-    id: '3months', name: '3 Months Membership', price: 7499.25, currency: 'LKR', durationDays: 90,
+    id: '3months', name: '3 Months Membership', price: 7499, currency: 'LKR', durationDays: 90,
     features: ['Unlimited Profiles', 'Connect With Any User on muslimnikah.lk', 'View Mobile Number', 'View WhatsApp Number', 'Chat with Members'],
     isActive: true, sortOrder: 0,
   },
   {
-    id: '6months', name: '6 Months Membership', price: 10004.33, currency: 'LKR', durationDays: 180,
+    id: '6months', name: '6 Months Membership', price: 10004, currency: 'LKR', durationDays: 180,
     features: ['Unlimited Profiles', 'Connect With Any User on muslimnikah.lk', 'View Mobile Number', 'View WhatsApp Number', 'Chat with Members'],
     isActive: true, sortOrder: 1,
   },
   {
-    id: '9months', name: '9 Months Membership', price: 14999.25, currency: 'LKR', durationDays: 270,
+    id: '9months', name: '9 Months Membership', price: 14999, currency: 'LKR', durationDays: 270,
     features: ['Unlimited Profiles', 'Connect With Any User on muslimnikah.lk', 'View Mobile Number', 'View WhatsApp Number', 'Chat with Members'],
     isActive: true, sortOrder: 2,
   },
 ];
 
-const ORIGINAL_PRICES: Record<string, number> = {
-  '3months': 9999.00,
-  '6months': 14999.00,
-  '9months': 19999.00,
-};
+function getEffective(pkg: Package | null, site: SiteDiscount) {
+  if (!pkg) return { disc: 0, orig: 0, final: 0 };
+  // Backend already computed effectiveDiscountPct and adjusted price/originalPrice
+  // effectiveDiscountPct already includes both package + site discount stacking
+  const disc = (pkg as any).effectiveDiscountPct ?? pkg.discountPct ?? 0;
+  const siteDisc = site.active ? site.pct : 0;
+  // If no backend discount (fallback data), apply site discount client-side
+  const effectiveDisc = disc > 0 ? disc : siteDisc;
+  const orig = pkg.originalPrice ?? pkg.price;
+  if (effectiveDisc <= 0) return { disc: 0, orig: pkg.price, final: pkg.price };
+  // If backend already computed price (discounted), use it directly
+  if ((pkg as any).effectiveDiscountPct != null) {
+    return { disc: effectiveDisc, orig, final: pkg.price };
+  }
+  // Fallback: compute client-side
+  const final = Math.round(orig * (1 - effectiveDisc / 100) * 100) / 100;
+  return { disc: effectiveDisc, orig, final };
+}
+
 
 /* ── Quick Profile Modal ─────────────────────────────────────── */
 function ProfileModal({
@@ -155,7 +174,8 @@ export default function SelectPlanPage() {
   const [profiles, setProfiles] = useState<any[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [pendingAction, setPendingAction] = useState<string | null>(null); // 'bank'
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [siteDiscount, setSiteDiscount] = useState<SiteDiscount>({ active: false, pct: 0, label: '' });
 
   const reloadProfiles = () => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('mn_token') : null;
@@ -171,11 +191,12 @@ export default function SelectPlanPage() {
     setIsLoggedIn(!!token);
 
     packagesApi.getActive('SUBSCRIPTION')
-      .then((r) => {
+      .then((r: any) => {
         const data: Package[] = r.data ?? [];
         const list = data.length > 0 ? data : FALLBACK;
         setPlans(list);
         setSelected(list[0]);
+        if (r.siteDiscount) setSiteDiscount(r.siteDiscount);
       })
       .catch(() => {
         setPlans(FALLBACK);
@@ -203,12 +224,15 @@ export default function SelectPlanPage() {
     if (!selected) { setMessage('Please select a package.'); return; }
 
     setSubmitting(true);
+    const { final } = getEffective(selected, siteDiscount);
     try {
       await paymentApi.initiate({
         childProfileId: profileId,
-        amount: selected.price,
+        amount: final,
         method: 'BANK_TRANSFER',
         bankRef,
+        packageId: (selected as any).id,
+        packageDurationDays: selected.durationDays,
       });
       setMessage('✅ Payment submitted! Your profile will be activated once the admin approves your bank transfer (usually within 24 hours). You can check the status in your dashboard.');
       setBankRef('');
@@ -235,8 +259,7 @@ export default function SelectPlanPage() {
     await doSubmitPayment(profileId);
   };
 
-  const savings = selected ? ((ORIGINAL_PRICES[selected.id] ?? selected.price * 1.25) - selected.price) : 0;
-  const savingsPct = selected ? Math.round((savings / (ORIGINAL_PRICES[selected.id] ?? selected.price * 1.25)) * 100) : 0;
+  const { disc: selDisc, orig: selOrig, final: selFinal } = getEffective(selected, siteDiscount);
 
   return (
     <div className="min-h-screen bg-gray-50 font-poppins pt-24">
@@ -287,37 +310,54 @@ export default function SelectPlanPage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {plans.map((plan) => {
-                  const orig = ORIGINAL_PRICES[plan.id] ?? plan.price * 1.25;
-                  const pct = Math.round(((orig - plan.price) / orig) * 100);
-                  const isSelected = selected?.id === plan.id;
-                  return (
-                    <div
-                      key={plan.id}
-                      onClick={() => setSelected(plan)}
-                      className={`cursor-pointer rounded-xl border-2 p-5 text-center transition-all duration-200 ${
-                        isSelected
-                          ? 'border-[#1B6B4A] bg-[#e8f5f0] shadow-lg scale-[1.02]'
-                          : 'border-gray-300 bg-white hover:border-[#1B6B4A]/50 hover:shadow'
-                      }`}
-                    >
-                      <p className="font-semibold text-gray-800 text-sm mb-2">{plan.name}</p>
-                      <p className="text-[#1B6B4A] font-bold text-lg">
-                        Rs. {plan.price.toLocaleString('en-LK', { minimumFractionDigits: 2 })}
-                      </p>
-                      {pct > 0 && (
-                        <p className="text-red-500 text-xs font-semibold mt-1">SAVE {pct}.00%</p>
-                      )}
-                      <p className="text-gray-400 text-xs line-through mt-0.5">
-                        Rs. {orig.toLocaleString('en-LK', { minimumFractionDigits: 2 })}
-                      </p>
-                      <p className={`text-xs font-semibold mt-3 ${isSelected ? 'text-[#1B6B4A]' : 'text-[#DB9D30]'}`}>
-                        {isSelected ? '✓ Selected' : 'Select Package'}
-                      </p>
-                    </div>
-                  );
-                })}
+              <div className="space-y-3">
+                {/* Site discount banner */}
+                {siteDiscount.active && siteDiscount.pct > 0 && (
+                  <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
+                    <span className="text-base">🏷️</span>
+                    <p className="text-sm font-bold text-red-700">
+                      {siteDiscount.pct}% OFF{siteDiscount.label ? ` — ${siteDiscount.label}` : ''}
+                    </p>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {plans.map((plan) => {
+                    const { disc, orig, final } = getEffective(plan, siteDiscount);
+                    const hasDiscount = disc > 0;
+                    const isSelected = selected?.id === plan.id;
+                    return (
+                      <div
+                        key={plan.id}
+                        onClick={() => setSelected(plan)}
+                        className={`cursor-pointer rounded-xl border-2 p-5 text-center transition-all duration-200 ${
+                          isSelected
+                            ? 'border-[#1B6B4A] bg-[#e8f5f0] shadow-lg scale-[1.02]'
+                            : 'border-gray-300 bg-white hover:border-[#1B6B4A]/50 hover:shadow'
+                        }`}
+                      >
+                        <p className="font-semibold text-gray-800 text-sm mb-2">{plan.name}</p>
+                        {hasDiscount ? (
+                          <>
+                            <p className="text-red-600 font-bold text-lg">
+                              Rs. {final.toLocaleString('en-LK', { minimumFractionDigits: 2 })}
+                            </p>
+                            <p className="text-gray-400 text-xs line-through">
+                              Rs. {orig.toLocaleString('en-LK', { minimumFractionDigits: 2 })}
+                            </p>
+                            <p className="text-red-500 text-xs font-bold">SAVE {disc}%</p>
+                          </>
+                        ) : (
+                          <p className="text-[#1B6B4A] font-bold text-lg">
+                            Rs. {plan.price.toLocaleString('en-LK', { minimumFractionDigits: 2 })}
+                          </p>
+                        )}
+                        <p className={`text-xs font-semibold mt-3 ${isSelected ? 'text-[#1B6B4A]' : 'text-[#DB9D30]'}`}>
+                          {isSelected ? '✓ Selected' : 'Select Package'}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -352,19 +392,19 @@ export default function SelectPlanPage() {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Package</span>
                   <span className="font-semibold text-[#1B6B4A]">
-                    {selected ? `Rs ${selected.price.toLocaleString('en-LK', { minimumFractionDigits: 2 })}` : 'Rs 0.00'}
+                    {selected ? `Rs ${(selDisc > 0 ? selFinal : selected.price).toLocaleString('en-LK', { minimumFractionDigits: 2 })}` : 'Rs 0.00'}
                   </span>
                 </div>
-                {savingsPct > 0 && (
+                {selDisc > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Savings</span>
-                    <span className="font-semibold text-red-500">-Rs {savings.toLocaleString('en-LK', { minimumFractionDigits: 2 })}</span>
+                    <span className="text-gray-600">Savings ({selDisc}% off)</span>
+                    <span className="font-semibold text-red-500">-Rs {(selOrig - selFinal).toLocaleString('en-LK', { minimumFractionDigits: 2 })}</span>
                   </div>
                 )}
                 <div className="border-t pt-3 flex justify-between text-sm font-bold">
                   <span>Total</span>
                   <span className="text-[#1B6B4A]">
-                    {selected ? `Rs ${selected.price.toLocaleString('en-LK', { minimumFractionDigits: 2 })}` : 'Rs 0.00'}
+                    {selected ? `Rs ${(selDisc > 0 ? selFinal : selected.price).toLocaleString('en-LK', { minimumFractionDigits: 2 })}` : 'Rs 0.00'}
                   </span>
                 </div>
               </div>
