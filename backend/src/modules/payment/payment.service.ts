@@ -1,7 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { PaymentMethod } from '@prisma/client';
+import { PaymentMethod, PaymentPurpose } from '@prisma/client';
 import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class InitiatePaymentDto {
@@ -14,11 +14,17 @@ export class InitiatePaymentDto {
   @IsEnum(PaymentMethod)
   method: PaymentMethod;
 
+  @IsOptional() @IsEnum(PaymentPurpose)
+  purpose?: PaymentPurpose;
+
   @IsOptional() @IsString()
   bankRef?: string;
 
   @IsOptional() @IsString()
   bankSlipUrl?: string;
+
+  @IsOptional() @IsNumber()
+  days?: number;
 }
 
 export class VerifyPaymentDto {
@@ -53,16 +59,20 @@ export class PaymentService {
         amount: dto.amount,
         method: dto.method,
         status: dto.method === 'BANK_TRANSFER' ? 'PENDING' : 'PENDING',
+        purpose: dto.purpose || 'SUBSCRIPTION',
         bankRef: dto.bankRef,
         bankSlipUrl: dto.bankSlipUrl,
+        gatewayPayload: dto.purpose === 'BOOST' && dto.days ? { days: dto.days } : undefined,
       },
     });
 
-    // Move profile to PAYMENT_PENDING
-    await this.prisma.childProfile.update({
-      where: { id: dto.childProfileId },
-      data: { status: 'PAYMENT_PENDING' },
-    });
+    // Move profile to PAYMENT_PENDING only if it's a new subscription purchase
+    if (dto.purpose !== 'BOOST') {
+      await this.prisma.childProfile.update({
+        where: { id: dto.childProfileId },
+        data: { status: 'PAYMENT_PENDING' },
+      });
+    }
 
     if (dto.method === 'BANK_TRANSFER') {
       this.events.emit('PAYMENT_PENDING', { paymentId: payment.id, profileId: profile.id });
@@ -85,7 +95,12 @@ export class PaymentService {
         data: { status: 'SUCCESS', gatewayRef: dto.gatewayRef },
       });
 
-      await this.activateSubscription(tx, payment.childProfileId);
+      if (payment.purpose === 'BOOST') {
+        const days = (payment.gatewayPayload as any)?.days || 7;
+        await this.activateBoost(tx, payment.childProfileId, days);
+      } else {
+        await this.activateSubscription(tx, payment.childProfileId);
+      }
     });
 
     this.events.emit('PAYMENT_SUCCESS', { paymentId: payment.id, profileId: payment.childProfileId });
@@ -119,6 +134,24 @@ export class PaymentService {
 
     this.events.emit('PROFILE_ACTIVATED', { profileId: childProfileId });
     this.logger.log(`Profile ACTIVATED: ${childProfileId}`);
+  }
+
+  async activateBoost(tx: any, childProfileId: string, days: number = 7) {
+    const profile = await tx.childProfile.findUnique({ where: { id: childProfileId } });
+    if (!profile) return;
+    const now = new Date();
+    // Extend from current expiry if already boosted
+    const base = profile.boostExpiresAt && profile.boostExpiresAt > now ? profile.boostExpiresAt : now;
+    const end = new Date(base);
+    end.setDate(end.getDate() + days);
+
+    await tx.childProfile.update({
+      where: { id: childProfileId },
+      data: { boostExpiresAt: end },
+    });
+
+    this.events.emit('PROFILE_BOOSTED', { profileId: childProfileId });
+    this.logger.log(`Profile BOOSTED logic: ${childProfileId} for ${days} days`);
   }
 
   async getMyPayments(userId: string) {

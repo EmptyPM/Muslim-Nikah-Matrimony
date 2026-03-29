@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { profileApi, paymentApi } from '@/services/api';
+import { profileApi, paymentApi, packagesApi } from '@/services/api';
 
 const STEPS = ['Personal', 'Location & Edu', 'Family', 'Preferences', 'Review'];
 
@@ -84,6 +84,11 @@ export default function ProfilesPage() {
   const [privacy, setPrivacy] = useState<Record<string, { showRealName: boolean; nickname: string; saving: boolean }>>({});
   // Boost per-profile: { [profileId]: { boosting, boostExpiresAt } }
   const [boost, setBoost] = useState<Record<string, { boosting: boolean; boostExpiresAt?: string | null }>>({});
+  const [boostPlans, setBoostPlans] = useState<any[]>([
+    { durationDays: 10, price: 4.99, name: '10 Days', description: 'Top listing for 10 days' },
+    { durationDays: 15, price: 7.99, name: '15 Days', description: 'Top listing for 15 days' },
+    { durationDays: 30, price: 14.99, name: '30 Days', description: 'Top listing for 30 days' },
+  ]);
 
   const showToast = (text: string, ok = true) => {
     setToast({ text, ok });
@@ -93,6 +98,11 @@ export default function ProfilesPage() {
   const load = () => {
     setLoading(true);
     profileApi.getMyProfiles().then((r) => setProfiles(r.data ?? [])).finally(() => setLoading(false));
+    packagesApi.getActive('BOOST').then((r) => {
+      if (r.data && r.data.length > 0) {
+        setBoostPlans(r.data);
+      }
+    }).catch(() => {});
   };
 
   useEffect(() => {
@@ -111,29 +121,25 @@ export default function ProfilesPage() {
     setBoost(initB);
   }, [profiles]);
 
-  const BOOST_PLANS = [
-    { days: 10, price: '$4.99', label: '10 Days', feature: 'Top listing for 10 days' },
-    { days: 15, price: '$7.99', label: '15 Days', feature: 'Top listing for 15 days', popular: true },
-    { days: 30, price: '$14.99', label: '30 Days', feature: 'Top listing for 30 days' },
-  ];
-
   const purchaseBoost = async (profileId: string, days: number) => {
+    const plan = boostPlans.find(p => p.durationDays === days);
+    if (!plan) return;
+    const price = plan.price;
+
     setBoost(prev => ({ ...prev, [profileId]: { ...prev[profileId], boosting: true } }));
     try {
-      const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3002/api';
-      const token = localStorage.getItem('mn_token');
-      const res = await fetch(`${BASE}/profile/boost/${profileId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ days }),
+      await paymentApi.initiate({
+        childProfileId: profileId,
+        amount: price,
+        method: 'GATEWAY',
+        purpose: 'BOOST',
+        days: days
       });
-      if (!res.ok) { const e = await res.json(); throw new Error(e.message ?? 'Boost failed'); }
-      const data = await res.json();
-      setBoost(prev => ({ ...prev, [profileId]: { boosting: false, boostExpiresAt: data.boostExpiresAt } }));
-      showToast(`Profile boosted for ${days} days! ✦ VIP badge is live.`);
+      showToast(`Boost payment initiated for ${days} days! Admin will approve shortly.`);
       load();
     } catch (e: any) {
-      showToast(e.message ?? 'Failed to boost profile', false);
+      showToast(e.message ?? 'Failed to initiate boost payment', false);
+    } finally {
       setBoost(prev => ({ ...prev, [profileId]: { ...prev[profileId], boosting: false } }));
     }
   };
@@ -571,24 +577,25 @@ export default function ProfilesPage() {
                         <strong>{new Date(boost[p.id].boostExpiresAt!).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</strong>
                       </div>
                     ) : (
-                      /* Plan cards */
                       <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-                        {BOOST_PLANS.map(plan => (
-                          <div key={plan.days} className={`relative rounded-xl border-2 p-2 sm:p-3 text-center cursor-pointer transition-all ${
-                            plan.popular
+                        {boostPlans.map((plan, idx) => {
+                          const popular = idx === 1; // Middle one is popular styling
+                          return (
+                          <div key={plan.id ?? plan.durationDays} className={`relative rounded-xl border-2 p-2 sm:p-3 text-center cursor-pointer transition-all ${
+                            popular
                               ? 'border-[#DB9D30] bg-[#DB9D30]/8 shadow-sm'
                               : 'border-[#DB9D30]/25 bg-white hover:border-[#DB9D30]/60'
                           }`}>
-                            {plan.popular && (
+                            {popular && (
                               <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#DB9D30] text-white text-[7px] sm:text-[8px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full whitespace-nowrap">
                                 POPULAR
                               </span>
                             )}
-                            <p className="text-[9px] sm:text-[11px] font-bold text-[#8B5E00] font-poppins leading-tight">{plan.label}</p>
-                            <p className="text-[13px] sm:text-[16px] font-extrabold text-[#DB9D30] font-poppins mt-0.5 leading-tight">{plan.price}</p>
-                            <p className="hidden sm:block text-[9px] text-[#A07830] font-poppins mt-0.5 leading-tight">{plan.feature}</p>
+                            <p className="text-[9px] sm:text-[11px] font-bold text-[#8B5E00] font-poppins leading-tight">{plan.name}</p>
+                            <p className="text-[13px] sm:text-[16px] font-extrabold text-[#DB9D30] font-poppins mt-0.5 leading-tight">${plan.price}</p>
+                            <p className="hidden sm:block text-[9px] text-[#A07830] font-poppins mt-0.5 leading-tight">{plan.description || `Top listing for ${plan.durationDays} days`}</p>
                             <button
-                              onClick={() => purchaseBoost(p.id, plan.days)}
+                              onClick={() => purchaseBoost(p.id, plan.durationDays)}
                               disabled={boost[p.id]?.boosting}
                               className={`mt-1.5 sm:mt-2 w-full py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-[10px] font-bold font-poppins transition-all disabled:opacity-50 ${
                                 plan.popular
@@ -606,7 +613,8 @@ export default function ProfilesPage() {
                               ) : '⚡ Boost'}
                             </button>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>

@@ -5,12 +5,12 @@ import { adminApi } from '@/services/api';
 
 type Package = {
   id: string; name: string; description?: string; price: number; currency: string;
-  durationDays: number; features: string[]; isActive: boolean; sortOrder: number; createdAt: string;
+  durationDays: number; features: string[]; isActive: boolean; sortOrder: number; type: string; createdAt: string;
 };
 
 const EMPTY_FORM = {
-  name: '', description: '', price: '', currency: 'USD',
-  durationDays: '30', featuresRaw: '', isActive: true, sortOrder: '0',
+  name: '', description: '', price: '', currency: 'LKR',
+  durationDays: '30', featuresRaw: '', isActive: true, sortOrder: '0', type: 'SUBSCRIPTION',
 };
 
 export default function AdminPackagesPage() {
@@ -55,6 +55,7 @@ export default function AdminPackagesPage() {
       featuresRaw: pkg.features.join('\n'),
       isActive: pkg.isActive,
       sortOrder: String(pkg.sortOrder),
+      type: pkg.type || 'SUBSCRIPTION',
     });
     setShowModal(true);
   };
@@ -74,6 +75,7 @@ export default function AdminPackagesPage() {
       features: form.featuresRaw.split('\n').map(f => f.trim()).filter(Boolean),
       isActive: form.isActive,
       sortOrder: parseInt(form.sortOrder) || 0,
+      type: form.type,
     };
     try {
       if (editing) {
@@ -165,7 +167,12 @@ export default function AdminPackagesPage() {
               <div className="px-6 pt-6 pb-4">
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div>
-                    <h3 className="font-bold text-gray-800 text-lg leading-tight">{pkg.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-gray-800 text-lg leading-tight">{pkg.name}</h3>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide ${pkg.type === 'BOOST' ? 'bg-amber-100 text-amber-700' : 'bg-[#1C3B35]/10 text-[#1C3B35]'}`}>
+                        {pkg.type === 'BOOST' ? '⚡ BOOST' : '✓ SUB'}
+                      </span>
+                    </div>
                     {pkg.description && <p className="text-gray-400 text-xs mt-1 leading-relaxed">{pkg.description}</p>}
                   </div>
                   {/* Active toggle */}
@@ -294,18 +301,28 @@ export default function AdminPackagesPage() {
                 </div>
               </div>
 
-              {/* Duration + Sort */}
+              {/* Type + Duration */}
               <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">Package Type</label>
+                  <select value={form.type} onChange={field('type')}
+                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-[#1C3B35] focus:ring-2 focus:ring-[#1C3B35]/10 transition bg-white">
+                    <option value="SUBSCRIPTION">Subscription</option>
+                    <option value="BOOST">Profile Boost</option>
+                  </select>
+                </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1.5">Duration (days) <span className="text-red-500">*</span></label>
                   <input value={form.durationDays} onChange={field('durationDays')} type="number" min="1" placeholder="30"
                     className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-[#1C3B35] focus:ring-2 focus:ring-[#1C3B35]/10 transition" />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">Sort Order</label>
-                  <input value={form.sortOrder} onChange={field('sortOrder')} type="number" min="0" placeholder="0"
-                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-[#1C3B35] focus:ring-2 focus:ring-[#1C3B35]/10 transition" />
-                </div>
+              </div>
+
+              {/* Sort Order */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Sort Order</label>
+                <input value={form.sortOrder} onChange={field('sortOrder')} type="number" min="0" placeholder="0"
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-[#1C3B35] focus:ring-2 focus:ring-[#1C3B35]/10 transition" />
               </div>
 
               {/* Features */}

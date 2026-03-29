@@ -66,7 +66,7 @@ export const subscriptionApi = {
 
 // ─── Payment ───────────────────────────────────────────────────────────────
 export const paymentApi = {
-  initiate: (body: { childProfileId: string; amount: number; method: string; bankRef?: string; bankSlipUrl?: string }) =>
+  initiate: (body: { childProfileId: string; amount: number; method: string; bankRef?: string; bankSlipUrl?: string; purpose?: string; days?: number; }) =>
     request<any>('/payment/initiate', { method: 'POST', body: JSON.stringify(body) }),
   verify: (body: { paymentId: string; gatewayRef: string }) =>
     request<any>('/payment/verify', { method: 'POST', body: JSON.stringify(body) }),
@@ -135,7 +135,7 @@ export const adminApi = {
 
 // ─── Public Packages (no auth) ────────────────────────────────────────────
 export const packagesApi = {
-  getActive: () => request<any>('/packages'),
+  getActive: (type?: string) => request<any>(`/packages${type ? `?type=${type}` : ''}`),
 };
 
 // ─── Public Profiles (no auth) ────────────────────────────────────────────

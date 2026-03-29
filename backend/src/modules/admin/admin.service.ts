@@ -18,6 +18,7 @@ export class CreatePackageDto {
   @IsOptional() @IsArray() features?: string[];
   @IsOptional() @IsBoolean() isActive?: boolean;
   @IsOptional() @IsNumber() sortOrder?: number;
+  @IsOptional() @IsString() type?: string;
 }
 
 @Injectable()
@@ -40,7 +41,12 @@ export class AdminService {
         where: { id: payment.id },
         data: { status: 'SUCCESS', approvedBy: adminId, approvedAt: new Date(), adminNote: dto.adminNote },
       });
-      await this.paymentService.activateSubscription(tx, payment.childProfileId);
+      if (payment.purpose === 'BOOST') {
+        const days = (payment.gatewayPayload as any)?.days || 7;
+        await this.paymentService.activateBoost(tx, payment.childProfileId, days);
+      } else {
+        await this.paymentService.activateSubscription(tx, payment.childProfileId);
+      }
     });
 
     this.events.emit('PAYMENT_SUCCESS', { paymentId: payment.id, profileId: payment.childProfileId, approvedBy: adminId });
@@ -262,16 +268,17 @@ export class AdminService {
   }
 
   // ─── Packages ─────────────────────────────────────────────────────────────
-  async getActivePackages() {
+  async getActivePackages(type?: string) {
     const packages = await this.prisma.package.findMany({
-      where: { isActive: true },
+      where: { isActive: true, ...(type ? { type } : {}) },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     });
     return { success: true, data: packages };
   }
 
-  async getPackages() {
+  async getPackages(type?: string) {
     const packages = await this.prisma.package.findMany({
+      where: type ? { type } : undefined,
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     });
     return { success: true, data: packages };
@@ -288,6 +295,7 @@ export class AdminService {
         features: dto.features ?? [],
         isActive: dto.isActive ?? true,
         sortOrder: dto.sortOrder ?? 0,
+        type: dto.type ?? 'SUBSCRIPTION',
       },
     });
     return { success: true, data: pkg };

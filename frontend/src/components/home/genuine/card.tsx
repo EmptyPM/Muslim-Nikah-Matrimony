@@ -1,6 +1,6 @@
 'use client';
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export type ProfileCardProps = {
@@ -21,105 +21,41 @@ export type ProfileCardProps = {
     onViewClick?: (e: React.MouseEvent) => void;
 };
 
-// Dummy data — replace with real API data when backend is ready
-const dummyProfiles: ProfileCardProps[] = [
-    {
-        name: "Mohamad",
-        city: "Colombo",
-        isPrivate: true,
-        isVerified: true,
-        age: 23,
-        height: "6' 1\"",
-        maritalStatus: "Single",
-        education: "St. Joseph College",
-        job: "Tech Lead",
-        joinedDaysAgo: 54,
-    },
-    {
-        name: "Aisha",
-        city: "Kandy",
-        isPrivate: false,
-        isVerified: true,
-        age: 25,
-        height: "5' 5\"",
-        maritalStatus: "Single",
-        education: "University of Peradeniya",
-        job: "Software Engineer",
-        joinedDaysAgo: 12,
-    },
-    {
-        name: "Ibrahim",
-        city: "Galle",
-        isPrivate: true,
-        isVerified: false,
-        age: 29,
-        height: "5' 10\"",
-        maritalStatus: "Divorced",
-        education: "SLIIT",
-        job: "Business Analyst",
-        joinedDaysAgo: 30,
-    },
-    {
-        name: "Ibrahim",
-        city: "Galle",
-        isPrivate: true,
-        isVerified: false,
-        age: 29,
-        height: "5' 10\"",
-        maritalStatus: "Divorced",
-        education: "SLIIT",
-        job: "Business Analyst",
-        joinedDaysAgo: 30,
-    },
-    {
-        name: "Ibrahim",
-        city: "Galle",
-        isPrivate: true,
-        isVerified: false,
-        age: 29,
-        height: "5' 10\"",
-        maritalStatus: "Divorced",
-        education: "SLIIT",
-        job: "Business Analyst",
-        joinedDaysAgo: 30,
-    },
-    {
-        name: "Ibrahim",
-        city: "Galle",
-        isPrivate: true,
-        isVerified: false,
-        age: 29,
-        height: "5' 10\"",
-        maritalStatus: "Divorced",
-        education: "SLIIT",
-        job: "Business Analyst",
-        joinedDaysAgo: 30,
-    },
-    {
-        name: "Ibrahim",
-        city: "Galle",
-        isPrivate: true,
-        isVerified: false,
-        age: 29,
-        height: "5' 10\"",
-        maritalStatus: "Divorced",
-        education: "SLIIT",
-        job: "Business Analyst",
-        joinedDaysAgo: 30,
-    },
-    {
-        name: "Ibrahim",
-        city: "Galle",
-        isPrivate: true,
-        isVerified: false,
-        age: 29,
-        height: "5' 10\"",
-        maritalStatus: "Divorced",
-        education: "SLIIT",
-        job: "Business Analyst",
-        joinedDaysAgo: 30,
-    },
-];
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function calcAge(dob?: string): number {
+    if (!dob) return 0;
+    return Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 3600 * 1000));
+}
+
+function cmToFeet(cm?: number): string {
+    if (!cm) return '–';
+    const totalInches = Math.round(cm / 2.54);
+    const ft = Math.floor(totalInches / 12);
+    const inches = totalInches % 12;
+    return `${ft}' ${inches}"`;
+}
+
+function daysAgo(iso?: string): number {
+    if (!iso) return 0;
+    return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+}
+
+function mapApiToCard(p: any): ProfileCardProps {
+    return {
+        name: p.name ?? 'Profile',
+        city: p.city ?? '–',
+        isPrivate: false,         // public profiles are always visible
+        isVerified: false,        // no verified flag yet
+        age: p.age ?? calcAge(p.dateOfBirth),
+        height: cmToFeet(p.height),
+        maritalStatus: p.civilStatus ?? 'Single',
+        education: p.education ?? '–',
+        job: p.occupation ?? '–',
+        joinedDaysAgo: daysAgo(p.createdAt),
+        memberId: p.memberId,
+        isVip: !!p.isVip,
+    };
+}
 
 const DecorativeBorder = () => (
     <svg
@@ -315,36 +251,85 @@ const GenuineProfileCard = ({
     );
 };
 
-// Default export renders all dummy cards (for use in a section)
+// ── Skeleton card shown while loading ────────────────────────────────────────
+const SkeletonCard = () => (
+    <div className="relative bg-white rounded-[20px] shadow-[0_4px_24px_rgba(0,0,0,0.10)] w-full overflow-hidden pb-5 animate-pulse">
+        <div className="h-[21px] bg-gray-100" />
+        <div className="px-4 pt-2">
+            <div className="flex items-center justify-between mb-2">
+                <div className="h-4 w-20 bg-gray-200 rounded-full" />
+                <div className="h-4 w-14 bg-gray-200 rounded-full" />
+            </div>
+            <div className="w-[110px] h-[110px] rounded-full bg-gray-200 mx-auto mt-1 mb-3" />
+            <div className="text-center mb-3 space-y-2">
+                <div className="h-4 w-28 bg-gray-200 rounded mx-auto" />
+                <div className="h-3 w-20 bg-gray-100 rounded mx-auto" />
+            </div>
+            <div className="space-y-2 mb-3">
+                {[1,2,3,4,5].map(i => (
+                    <div key={i} className="flex justify-between">
+                        <div className="h-3 w-16 bg-gray-100 rounded" />
+                        <div className="h-3 w-20 bg-gray-200 rounded" />
+                    </div>
+                ))}
+            </div>
+            <div className="border-t border-dashed border-gray-200 mt-2 mb-3" />
+            <div className="h-3 w-24 bg-gray-100 rounded mx-auto mb-3" />
+            <div className="flex gap-2">
+                <div className="flex-1 h-9 bg-gray-100 rounded-xl" />
+                <div className="flex-[1.5] h-9 bg-gray-200 rounded-xl" />
+            </div>
+        </div>
+    </div>
+);
+
+// ── Live profiles fetched from the public API ────────────────────────────────
 const GenuineProfileCards = () => {
     const router = useRouter();
-    
+    const [profiles, setProfiles] = useState<ProfileCardProps[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3002/api';
+        fetch(`${BASE}/profiles/public?status=ACTIVE`)
+            .then(r => r.ok ? r.json() : Promise.reject())
+            .then(d => {
+                const items: any[] = d.data ?? [];
+                // Take top 8, VIP boosted profiles first
+                setProfiles(items.slice(0, 8).map(mapApiToCard));
+            })
+            .catch(() => setProfiles([]))
+            .finally(() => setLoading(false));
+    }, []);
+
     const handleChatClick = (e: React.MouseEvent) => {
         e.preventDefault();
         const token = typeof window !== 'undefined' ? localStorage.getItem('mn_token') : null;
-        if (token) {
-            router.push('/dashboard/chat');
-        } else {
-            router.push('/login');
-        }
+        router.push(token ? '/dashboard/chat' : '/login');
     };
 
     const handleViewClick = (e: React.MouseEvent) => {
         e.preventDefault();
         const token = typeof window !== 'undefined' ? localStorage.getItem('mn_token') : null;
-        if (token) {
-            router.push('/dashboard/profiles');
-        } else {
-            router.push('/login');
-        }
+        router.push(token ? '/dashboard/members' : '/login');
     };
+
+    if (loading) {
+        return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-6 xl:grid-cols-4 justify-items-center">
+                {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+        );
+    }
+
+    if (profiles.length === 0) return null;
 
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-6 xl:grid-cols-4 justify-items-center">
-            {dummyProfiles.map((profile, idx) => (
-                <GenuineProfileCard 
-                    key={idx} 
-                    {...profile} 
+            {profiles.map((profile, idx) => (
+                <GenuineProfileCard
+                    key={idx}
+                    {...profile}
                     onChatClick={handleChatClick}
                     onViewClick={handleViewClick}
                 />

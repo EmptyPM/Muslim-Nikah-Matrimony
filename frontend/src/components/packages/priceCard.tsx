@@ -35,7 +35,7 @@ export default function PricingCards() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    packagesApi.getActive()
+    packagesApi.getActive('SUBSCRIPTION')
       .then((r) => {
         const data: Package[] = r.data ?? [];
         const list = data.length > 0 ? data : FALLBACK;

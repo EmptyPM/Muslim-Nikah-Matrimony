@@ -10,8 +10,8 @@ export class PublicPackagesController {
   constructor(private readonly service: AdminService) {}
 
   @Get('packages')
-  getActivePackages() {
-    return this.service.getActivePackages();
+  getActivePackages(@Query('type') type?: string) {
+    return this.service.getActivePackages(type);
   }
 
   @Get('profiles/public')
@@ -86,7 +86,7 @@ export class AdminController {
 
   // ─── Packages ─────────────────────────────────────────────────────────────
   @Get('packages')
-  getPackages() { return this.service.getPackages(); }
+  getPackages(@Query('type') type?: string) { return this.service.getPackages(type); }
 
   @Post('packages')
   createPackage(@Body() dto: CreatePackageDto) { return this.service.createPackage(dto); }

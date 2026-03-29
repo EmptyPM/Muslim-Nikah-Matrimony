@@ -42,6 +42,11 @@ enum PaymentMethod {
   BANK_TRANSFER
 }
 
+enum PaymentPurpose {
+  SUBSCRIPTION
+  BOOST
+}
+
 enum FieldVisibility {
   PUBLIC
   PRIVATE
@@ -156,6 +161,7 @@ model Payment {
   currency       String        @default("USD")
   method         PaymentMethod @default(GATEWAY)
   status         PaymentStatus @default(PENDING)
+  purpose        PaymentPurpose @default(SUBSCRIPTION)
 
   // Bank transfer
   bankRef        String?
@@ -197,6 +203,7 @@ model Package {
   features         String[] // list of feature strings
   isActive         Boolean  @default(true)
   sortOrder        Int      @default(0)
+  type             String   @default("SUBSCRIPTION") // "SUBSCRIPTION" or "BOOST"
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }

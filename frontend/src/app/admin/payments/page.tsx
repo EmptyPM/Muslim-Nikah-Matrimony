@@ -5,7 +5,7 @@ import { adminApi } from '@/services/api';
 
 type Payment = {
   id: string; amount: number; currency: string; method: string;
-  status: string; bankRef?: string; bankSlipUrl?: string;
+  status: string; bankRef?: string; bankSlipUrl?: string; purpose?: string;
   adminNote?: string; approvedAt?: string; createdAt: string;
   user?: { email: string }; childProfile?: { id: string; name: string; memberId?: string };
 };
@@ -47,7 +47,13 @@ function ApproveModal({
         <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
           <Row label="Payment ID" value={<span className="font-mono text-xs bg-white border border-gray-200 rounded px-2 py-0.5 text-gray-700 select-all">{payment.id}</span>} />
           <Row label="Customer" value={payment.user?.email ?? '—'} />
-          <Row label="Profile" value={`${payment.childProfile?.name ?? '—'}${payment.childProfile?.memberId ? ` (${payment.childProfile.memberId})` : ''}`} />
+          <Row label="Profile" value={
+            <div className="flex flex-col items-end gap-1">
+              <span>{`${payment.childProfile?.name ?? '—'}${payment.childProfile?.memberId ? ` (${payment.childProfile.memberId})` : ''}`}</span>
+              {payment.purpose === 'BOOST' && <span className="bg-[#DB9D30] text-white text-[10px] px-1.5 py-0.5 rounded font-bold">⚡ PROFILE BOOST</span>}
+              {payment.purpose === 'SUBSCRIPTION' && <span className="bg-[#1C3B35] text-white text-[10px] px-1.5 py-0.5 rounded font-bold">✓ SUBSCRIPTION</span>}
+            </div>
+          } />
           <Row label="Amount" value={<span className="font-semibold text-gray-800">${payment.amount} {payment.currency}</span>} />
           <Row label="Method" value={payment.method === 'BANK_TRANSFER' ? '🏦 Bank Transfer' : '💳 Online Gateway'} />
           {payment.bankRef && <Row label="Bank Ref" value={<span className="font-mono text-[#1C3B35] font-semibold">{payment.bankRef}</span>} />}
@@ -269,6 +275,9 @@ export default function AdminPaymentsPage() {
                         <p className="font-medium text-gray-800">{p.childProfile?.name ?? '—'}</p>
                         {p.childProfile?.memberId && (
                           <p className="text-xs text-gray-400">{p.childProfile.memberId}</p>
+                        )}
+                        {p.purpose === 'BOOST' && (
+                          <span className="inline-block mt-0.5 text-[9px] font-bold bg-[#DB9D30] text-white px-1.5 py-0.5 rounded shadow-sm">⚡ BOOST</span>
                         )}
                       </td>
                       <td className="px-5 py-3.5 font-semibold text-gray-800 whitespace-nowrap">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Check, ChevronDown, Calendar } from "lucide-react";
 
@@ -295,11 +296,16 @@ function Step5({ data, onChange, lookingFor, setLookingFor, agreedTerms, setAgre
 }
 
 /* ─── Main Page ─── */
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3002/api";
+
 export default function RegisterPage() {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [lookingFor, setLookingFor] = useState("Male");
   const [agreedTerms, setAgreedTerms] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = (
     e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement | HTMLTextAreaElement>
@@ -316,9 +322,69 @@ export default function RegisterPage() {
     if (currentStep > 1) setCurrentStep((s) => s - 1);
   };
 
-  const handleSubmit = () => {
-    console.log("Registration submitted:", formData);
-    // TODO: integrate with backend
+  const handleSubmit = async () => {
+    if (!agreedTerms) {
+      setError("Please accept the terms and conditions to continue.");
+      return;
+    }
+    if (!formData.email || !formData.password) {
+      setError("Email and password are required (Step 2).");
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match (Step 2).");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    try {
+      // Step 1: Register the user account
+      const regRes = await fetch(`${API_URL}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          phone: formData.phone || undefined,
+        }),
+      });
+      const regData = await regRes.json();
+      if (!regRes.ok || !regData.success) {
+        setError(regData.message ?? "Registration failed. Please try again.");
+        return;
+      }
+      const token: string = regData.token;
+      localStorage.setItem("mn_token", token);
+      localStorage.setItem("mn_user", JSON.stringify(regData.user));
+
+      // Step 2: Create child profile with the personal details
+      const name = [formData.firstName, formData.lastName].filter(Boolean).join(" ") || "Profile";
+      const gender = formData.gender?.toUpperCase() === "FEMALE" ? "FEMALE" : "MALE";
+      const dateOfBirth = formData.birthDate || new Date(Date.now() - 25 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+
+      await fetch(`${API_URL}/profile/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          name,
+          gender,
+          dateOfBirth,
+          city: formData.city || undefined,
+          country: formData.country || undefined,
+          education: formData.education || undefined,
+          occupation: formData.occupation || undefined,
+          about: formData.about || undefined,
+        }),
+      });
+
+      // Redirect to plan selection
+      router.push("/select-plan");
+    } catch {
+      setError("Network error. Please check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -395,13 +461,20 @@ export default function RegisterPage() {
             {currentStep === 5 && <Step5 data={formData} onChange={handleChange} lookingFor={lookingFor} setLookingFor={setLookingFor} agreedTerms={agreedTerms} setAgreedTerms={setAgreedTerms} />}
           </div>
 
+          {/* Error message */}
+          {error && currentStep === 5 && (
+            <div className="mt-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+              {error}
+            </div>
+          )}
+
           {/* Navigation Buttons */}
-          <div className="mt-8 flex justify-between items-center">
+          <div className="mt-6 flex justify-between items-center">
             <button
               onClick={handleBack}
-              disabled={currentStep === 1}
+              disabled={currentStep === 1 || loading}
               className={`px-6 py-2.5 rounded-lg text-sm font-medium border transition-all duration-200 ${
-                currentStep === 1
+                currentStep === 1 || loading
                   ? "border-gray-200 text-gray-300 cursor-not-allowed"
                   : "border-[#1B6B4A] text-[#1B6B4A] hover:bg-[#1B6B4A]/5"
               }`}
@@ -419,9 +492,16 @@ export default function RegisterPage() {
             ) : (
               <button
                 onClick={handleSubmit}
-                className="px-8 py-2.5 rounded-lg bg-[#1B6B4A] text-white text-sm font-semibold hover:bg-[#155a3d] transition-all duration-200 shadow-md hover:shadow-lg"
+                disabled={loading}
+                className="px-8 py-2.5 rounded-lg bg-[#1B6B4A] text-white text-sm font-semibold hover:bg-[#155a3d] transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-60 flex items-center gap-2"
               >
-                Create Account
+                {loading && (
+                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                )}
+                {loading ? "Creating Account…" : "Create Account"}
               </button>
             )}
           </div>
