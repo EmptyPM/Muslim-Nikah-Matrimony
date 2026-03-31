@@ -189,17 +189,40 @@ jobs:
 
             echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
 
-            docker_compose() {
-              if docker compose version >/dev/null 2>&1; then
-                docker compose "$@"
-              elif command -v docker-compose >/dev/null 2>&1; then
-                docker-compose "$@"
-              else
-                echo "Docker Compose not found (install docker-compose-plugin or docker-compose)" >&2
-                exit 1
+            # Compose v1 (docker-compose 1.29) crashes with KeyError: ContainerConfig on modern images.
+            # Only Docker Compose v2 (docker compose) is supported here.
+            if ! docker compose version >/dev/null 2>&1; then
+              echo "Installing Docker Compose v2 plugin (docker-compose-plugin)..."
+              if command -v apt-get >/dev/null 2>&1; then
+                apt-get update -qq
+                DEBIAN_FRONTEND=noninteractive apt-get install -y docker-compose-plugin || true
+              elif command -v dnf >/dev/null 2>&1; then
+                dnf install -y docker-compose-plugin || true
+              elif command -v yum >/dev/null 2>&1; then
+                yum install -y docker-compose-plugin || true
               fi
-            }
+            fi
+            if ! docker compose version >/dev/null 2>&1; then
+              echo "APT package missing or failed; installing Compose v2 CLI binary (GitHub)..."
+              ARCH=$(uname -m)
+              case "$ARCH" in
+                x86_64) SUFFIX="x86_64" ;;
+                aarch64|arm64) SUFFIX="aarch64" ;;
+                *)
+                  echo "ERROR: unsupported CPU arch for Compose binary: $ARCH" >&2
+                  exit 1
+                  ;;
+              esac
+              COMPOSE_VERSION="v2.33.1"
+              mkdir -p /usr/local/lib/docker/cli-plugins
+              curl -fsSL "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-${SUFFIX}" -o /usr/local/lib/docker/cli-plugins/docker-compose
+              chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+            fi
+            if ! docker compose version >/dev/null 2>&1; then
+              echo "ERROR: docker compose (v2) still not available after install." >&2
+              exit 1
+            fi
 
-            docker_compose -f docker-compose.prod.yml --env-file .env pull
-            docker_compose -f docker-compose.prod.yml --env-file .env up -d
+            docker compose --env-file .env -f docker-compose.prod.yml pull
+            docker compose --env-file .env -f docker-compose.prod.yml up -d
             docker image prune -f
