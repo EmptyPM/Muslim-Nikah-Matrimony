@@ -1,20 +1,17 @@
-
 services:
-  postgres:
+  db:
     image: postgres:16-alpine
-    container_name: muslim_nikah_postgres
-    restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-muslim_nikah}
-    ports:
-      - "5433:5432"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: muslim_nikah
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-muslim_nikah}"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U postgres -d muslim_nikah"]
+      interval: 5s
       timeout: 5s
       retries: 5
 
@@ -22,34 +19,30 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: myapp_backend
-    restart: unless-stopped
-    env_file:
-      - ./backend/.env
     ports:
-      - "3001:3001"
+      - "4000:4000"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/muslim_nikah
+      PORT: "4000"
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET:-change-me-use-a-secret-at-32-chars-min-in-prod!!}
+      JWT_EXPIRES_IN: 7d
+      FRONTEND_URL: http://localhost:3000
     depends_on:
-      postgres:
+      db:
         condition: service_healthy
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: myapp_frontend
-    restart: unless-stopped
-    env_file:
-      - ./frontend/.env.local
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:4000/api
+        NEXT_PUBLIC_SOCKET_URL: http://localhost:4000
     ports:
       - "3000:3000"
     depends_on:
       - backend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
 
 volumes:
   postgres_data:

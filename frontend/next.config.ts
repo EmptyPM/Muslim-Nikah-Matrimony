@@ -8,6 +8,7 @@ const networkIPs = Object.values(os.networkInterfaces())
   .map((i) => i!.address);
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   images: {
     qualities: [75, 100],
   },
