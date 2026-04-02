@@ -1,7 +1,10 @@
 'use client';
 
 import { ReactNode, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+
+const ADMIN_LOGO_SRC = '/images/logo%201.png';
 
 const navItems = [
   {
@@ -116,54 +119,75 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     item.exact ? pathname === item.href : pathname.startsWith(item.href);
 
   return (
-    <div className={`min-h-screen flex font-poppins ${dark ? 'bg-gray-900' : 'bg-[#F4F6F9]'}`}>
-      {/* ── Sidebar ── */}
-      <aside className="w-60 bg-[#1C3B35] text-white flex flex-col shadow-2xl min-h-screen hidden md:flex flex-shrink-0">
-        {/* Logo */}
-        <div className="px-6 py-5 border-b border-white/10">
-          <a href="/" className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-[#D4A843] flex items-center justify-center flex-shrink-0">
-              <svg className="h-4 w-4 fill-white" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm font-bold leading-tight tracking-wide">Muslim Nikah</p>
-              <p className="text-[10px] text-white/50 leading-tight">Admin Panel</p>
-            </div>
-          </a>
+    <div
+      className={`min-h-screen flex font-poppins md:gap-5 md:p-3 ${dark ? 'bg-gray-900' : 'bg-[#F4F6F9]'}`}
+    >
+      {/* ── Sidebar (white rounded card + logo image) ── */}
+      <aside className="hidden w-64 shrink-0 flex-col rounded-[40px] bg-white p-8 shadow-sm ring-1 ring-black/5 md:flex md:min-h-[calc(100vh-2.5rem)]">
+        <div className="mb-10 shrink-0">
+          <Link href="/" className="block outline-none focus-visible:ring-2 focus-visible:ring-black/20 focus-visible:ring-offset-2 rounded-lg">
+            {/* Place file at public/images/logo 1.png */}
+            <img
+              src={ADMIN_LOGO_SRC}
+              alt="Muslim Nikah"
+              className="h-auto w-full max-w-[220px] object-contain object-left"
+              width={220}
+              height={72}
+            />
+          </Link>
+          <p className="mt-2 text-[10px] md:text-sm lg:text-sm font-semibold uppercase tracking-[0.12em] text-gray-400">
+            Admin Panel
+          </p>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto">
-          {navItems.map((item) => {
-            const active = isActive(item);
-            return (
-              <a key={item.href} href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium transition-all duration-150 ${
-                  active
-                    ? 'bg-white/15 text-white shadow-sm'
-                    : 'text-white/60 hover:bg-white/8 hover:text-white/90'
-                }`}>
-                <span className={active ? 'text-white' : 'text-white/50'}>{item.icon}</span>
-                {item.label}
-                {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#D4A843]" />}
-              </a>
-            );
-          })}
+        <nav className="flex min-h-0 flex-1 flex-col">
+          <div className="flex flex-1 flex-col gap-6 overflow-y-auto overflow-x-hidden pr-1">
+            {navItems.map((item) => {
+              const active = isActive(item);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-3 rounded-2xl py-1 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-black/15 focus-visible:ring-offset-2 ${
+                    active ? '' : 'hover:opacity-90'
+                  }`}
+                >
+                  <span
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors ${
+                      active ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'
+                    }`}
+                  >
+                    {item.icon}
+                  </span>
+                  <span
+                    className={`text-lg leading-tight ${
+                      active ? 'font-semibold text-[#121514]' : 'font-medium text-[#7B7B7B]'
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+
+          <div className="shrink-0 pt-8">
+            <button
+              type="button"
+              onClick={logout}
+              className="flex w-full items-center gap-4 rounded-2xl py-1 text-left transition-colors outline-none hover:opacity-90 focus-visible:ring-2 focus-visible:ring-black/15 focus-visible:ring-offset-2"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" aria-hidden>
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+              </span>
+              <span className="text-lg font-medium text-gray-500">Log Out</span>
+            </button>
+          </div>
         </nav>
-
-        {/* Log Out */}
-        <div className="px-3 pb-5 border-t border-white/10 pt-3">
-          <button onClick={logout}
-            className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-[13.5px] font-medium text-white/60 hover:text-white hover:bg-white/8 transition">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-            Log Out
-          </button>
-        </div>
       </aside>
 
       {/* ── Right panel ── */}
