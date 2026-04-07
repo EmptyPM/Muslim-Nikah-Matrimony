@@ -83,7 +83,7 @@ const Nav = () => {
   const linkActiveMobile = 'text-[#DB9D30] hover:text-[#DB9D30]/80'
 
   return (
-    <div className="fixed top-3 sm:top-5 left-0 right-0 z-[500] isolate flex touch-manipulation justify-center px-3 sm:px-5 lg:px-8">
+    <div className="fixed top-3 sm:top-5 left-0 right-0 z-[500] isolate flex touch-manipulation justify-center">
       <div className=" container mx-auto containerpadding flex flex-col gap-2">
         <nav className=" backdrop-blur-md bg-[#4B7F73]/50 border border-white/15 rounded-full shadow-2xl shadow-black/30">
           <div className=" px-4 sm:px-6 lg:px-10">

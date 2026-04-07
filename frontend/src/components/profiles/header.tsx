@@ -60,7 +60,7 @@ const ProfilesHeader = () => {
           <span className="font-aref-ruqaa-ink font-bold text-[#DB9D30]">Blessed</span> Match
         </h1>
         <p className="paragraph font-poppins text-white max-w-4xl">
-          Begin a meaningful journey guided by faith, trust, and sincere intentions. Our platform is designed to help you find a compatible life partner while honouring values, family involvement, and spiritual connection.
+          Begin a meaningful journey guided by faith, trust, and sincere intentions. Our platform is designed to help you find a compatible life partner while honoring values, family involvement, and spiritual connection—leading you towards a truly blessed and lasting match.
         </p>
       </div>
     </section>

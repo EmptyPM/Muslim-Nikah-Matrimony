@@ -31,14 +31,27 @@ const FAQS = [
   },
 ] as const;
 
+const TOP_CORNER_SRC = "/images/genuine/top%20corner.svg";
+
 export default function FaqSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const toggle = (i: number) => setOpenIndex(openIndex === i ? null : i);
 
   return (
-    <section className="w-full bg-[#E6EEEC] margin-y py-12">
-      <div className="containerpadding container mx-auto flex flex-col gap-12">
+    <section className="relative w-full bg-[#E6EEEC] margin-y py-12 overflow-hidden">
+      <div
+        className="pointer-events-none absolute top-0 right-0 z-0 select-none"
+        aria-hidden
+      >
+        <img
+          src={TOP_CORNER_SRC}
+          alt=""
+          className="w-32 md:w-48 lg:w-64 h-auto"
+        />
+      </div>
+
+      <div className="containerpadding container mx-auto flex flex-col gap-12 relative z-10">
         {/* ── Title block (kept from original) ── */}
         <div className="flex flex-col items-center text-center gap-4">
           <Image
@@ -50,7 +63,7 @@ export default function FaqSection() {
             className="object-contain"
           />
 
-          <p className="font-andada-pro title-sub-top font-light text-[#4B5563] max-w-2xl">
+          <p className="font-andada-pro title-sub-top font-light text-[#4B5563] max-w-2xl lg:max-w-none">
             Find clear answers to common questions about creating your profile
             and finding the right match.
           </p>
@@ -67,7 +80,7 @@ export default function FaqSection() {
         {/* ── Two-column layout ── */}
         <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-12">
           {/* Left — subtitle + mosque image */}
-          <div className="flex flex-col gap-6 lg:w-2/5">
+          <div className="flex flex-col gap-6 lg:w-[42%]">
             <p className="font-poppins title-sub-top text-[#4B5563] leading-relaxed">
               Everything you need to know to start your journey with confidence
               and peace of mind.
@@ -78,8 +91,8 @@ export default function FaqSection() {
                 src="/images/packages/faq.png"
                 alt="Mosque illustration"
                 width={480}
-                height={480}
-                className="h-auto w-full object-contain"
+                height={520}
+                className="h-auto w-full object-contain lg:min-h-[400px]"
               />
             </div>
           </div>

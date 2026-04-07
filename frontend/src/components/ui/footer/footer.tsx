@@ -101,7 +101,7 @@ const Footer = () => {
         {/* Large brand name — single line; fluid size capped at 180px (11.25rem) */}
         <div className="mt-8 mb-2 w-full select-none overflow-hidden">
           <h1
-            className="whitespace-nowrap text-center font-poppins text-[44px] sm:text-[56px] md:text-[84px] lg:text-[116px] xl:text-[148px] 2xl:text-[180px] font-semibold uppercase leading-none"
+            className="flex justify-between w-full font-poppins text-[44px] sm:text-[56px] md:text-[84px] lg:text-[116px] xl:text-[148px] 2xl:text-[180px] font-semibold uppercase leading-none"
             style={{
               background: "linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.08) 100%)",
               WebkitBackgroundClip: "text",
@@ -109,7 +109,9 @@ const Footer = () => {
               backgroundClip: "text",
             }}
           >
-            Muslim Nikah
+            {"MUSLIM NIKAH".split("").map((char, index) => (
+              <span key={index}>{char === " " ? "\u00A0" : char}</span>
+            ))}
           </h1>
         </div>
 
