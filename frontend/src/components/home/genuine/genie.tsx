@@ -5,6 +5,7 @@ import GenuineProfileCards from "@/components/home/genuine/card";
 import MainButton from "@/components/ui/mainbtn";
 
 const COLUMN_ART_SRC = "/images/genuine/column-art.svg";
+const TOP_CORNER_SRC = "/images/genuine/top%20corner.svg";
 
 const columnArtImgLeft =
   "h-full min-h-0 w-auto max-w-[min(42vw,300px)] -translate-x-[8%] object-top-left object-contain";
@@ -36,6 +37,13 @@ const GenuineSection = () => {
         <div className="flex min-h-0 flex-1 basis-0 items-start justify-end">
           <img src={COLUMN_ART_SRC} alt="" className={columnArtImgRight} />
         </div>
+      </div>
+
+      <div
+        className="pointer-events-none absolute top-0 right-0 z-0 select-none"
+        aria-hidden
+      >
+        <img src={TOP_CORNER_SRC} alt="" className="w-32 md:w-48 lg:w-64 h-auto" />
       </div>
 
       <div className="containerpadding relative z-10 container mx-auto">

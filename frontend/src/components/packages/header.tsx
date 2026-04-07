@@ -1,4 +1,4 @@
- "use client";
+"use client";
 
 import React, { useRef } from "react";
 import Image from "next/image";
@@ -56,12 +56,12 @@ const AboutHeader = () => {
       <div className="relative z-10 containerpadding container mx-auto flex min-h-[500px] sm:min-h-[600px] md:min-h-[500px] lg:min-h-[600px] flex-col items-center justify-center gap-5  text-center margin-y">
         {/* Eyebrow */}
         <p className="font-andada-pro title-sub-top font-light text-white ">
-        Follow a trusted path built on faith, privacy, and family values.
+          Find the Right Plan for Your Journey and Commitment
         </p>
 
         {/* Heading */}
         <h1 ref={headingRef} className="title font-poppins font-medium text-white leading-tight max-w-4xl">
-        Choose a plan that fits
+          Choose a plan that fits
           <br />
           Your{" "}
           <span className="font-aref-ruqaa-ink font-bold text-[#DB9D30]">
@@ -71,7 +71,7 @@ const AboutHeader = () => {
 
         {/* Description */}
         <p className="paragraph font-poppins text-white  max-w-4xl">
-        Explore our carefully designed packages that offer the right balance of privacy, support, and visibility to help you find your ideal life partner with confidence.
+          Explore our carefully designed packages that offer the right balance of privacy, support, and visibility to help you find your ideal life partner with confidence.
         </p>
       </div>
     </section>

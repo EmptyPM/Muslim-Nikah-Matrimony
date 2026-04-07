@@ -44,7 +44,7 @@ const MissionSection = () => {
           </div>
 
           {/* ── Right: combined image ── */}
-          <div className="flex items-center justify-center lg:w-1/2">
+          <div className="flex items-center justify-center lg:justify-end lg:w-1/2">
             <Image
               src="/images/about/mission/rightmission.png"
               alt="Our mission — three people giving thumbs up with gold badge"

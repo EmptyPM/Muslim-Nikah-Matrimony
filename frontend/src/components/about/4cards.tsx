@@ -3,12 +3,12 @@ import { ShieldCheck, Globe, Lock, BadgeCheck } from "lucide-react";
 
 const CARDS = [
   {
-    icon: BadgeCheck ,
+    icon: BadgeCheck,
     title: "Verified Profiles",
     description: "Every profile is carefully reviewed to ensure authenticity.",
   },
   {
-    icon: Globe,
+    icon: "/images/about/marketing 1.png",
     title: "Global Reach",
     description: "Connect with Muslim profiles from around the world.",
   },
@@ -18,21 +18,23 @@ const CARDS = [
     description: "Full control over your personal information and visibility.",
   },
   {
-    icon: Lock,
+    icon: "/images/about/protection 1.png",
     title: "Secure Connect",
     description: "Safe and respectful interaction within the platform.",
   },
-] as const;
+];
 
 function WhyCard({
-  icon: Icon,
+  icon,
   title,
   description,
 }: {
-  icon: React.ElementType;
+  icon: React.ElementType | string;
   title: string;
   description: string;
 }) {
+  const isImage = typeof icon === "string";
+  const Icon = !isImage ? (icon as React.ElementType) : null;
   return (
     <div className="relative overflow-hidden rounded-[25px]">
       {/* Card background SVG */}
@@ -47,7 +49,15 @@ function WhyCard({
       <div className="relative z-10 flex flex-col items-center gap-4 px-6 py-8 text-center">
         {/* Icon box */}
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
-          <Icon className="h-7 w-7 lg:h-8 lg:w-8 text-[#DB9D30]" />
+          {isImage ? (
+            <img
+              src={icon as string}
+              alt=""
+              className="h-7 w-7 lg:h-8 lg:w-8 object-contain"
+            />
+          ) : (
+            Icon && <Icon className="h-7 w-7 lg:h-8 lg:w-8 text-[#DB9D30]" />
+          )}
         </div>
 
         <h3 className="font-poppins subtitle font-medium text-white ">

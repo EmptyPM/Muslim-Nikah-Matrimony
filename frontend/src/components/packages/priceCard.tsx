@@ -87,7 +87,7 @@ export default function PricingCards() {
     return (
       <section className="w-full bg-white margin-y">
         <div className="containerpadding container mx-auto">
-          <div className="flex flex-col items-stretch gap-6 sm:flex-row sm:items-start sm:justify-center">
+          <div className="flex flex-col items-stretch gap-6 sm:flex-row sm:items-stretch sm:justify-center">
             {[1, 2, 3].map((i) => (
               <div key={i} className="rounded-2xl border-2 border-transparent bg-gray-100 animate-pulse h-80 sm:w-[300px] xl:w-[400px]" />
             ))}
@@ -114,7 +114,7 @@ export default function PricingCards() {
       )}
 
       <div className="containerpadding container mx-auto">
-        <div className="flex flex-col items-stretch gap-6 sm:flex-row sm:items-start sm:justify-center">
+        <div className="flex flex-col items-stretch gap-6 sm:flex-row sm:items-stretch sm:justify-center">
           {plans.map((plan, idx) => {
             const isSelected = selectedId === plan.id;
             const { disc, orig, final } = getEffective(plan, siteDiscount);
@@ -199,6 +199,7 @@ export default function PricingCards() {
                   type="button"
                   className={[
                     "mt-auto w-full rounded-full py-3 text-base font-semibold font-poppins transition-all duration-200",
+                    idx === Math.floor(plans.length / 2) ? "mb-4" : "",
                     isSelected
                       ? "bg-[#397466] text-white hover:bg-[#2e6055]"
                       : "border border-[#397466] bg-white text-[#397466] hover:bg-[#397466]/10",

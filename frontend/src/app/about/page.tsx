@@ -9,14 +9,24 @@ function page() {
   return (
     <main>
       <AboutHeader />
-      <div data-aos="fade-up" data-aos-delay="100" data-aos-duration="2000">
-      <BuiltSection />
-      <MissionSection />
+      <div
+        data-aos="fade-up"
+        data-aos-delay="100"
+        data-aos-duration="2000"
+        suppressHydrationWarning
+      >
+        <BuiltSection />
+        <MissionSection />
       </div>
-      <div data-aos="fade-up" data-aos-delay="100" data-aos-duration="2000">
-      <WhyChooseSection />
+      <div
+        data-aos="fade-up"
+        data-aos-delay="100"
+        data-aos-duration="2000"
+        suppressHydrationWarning
+      >
+        <WhyChooseSection />
       </div>
-      <ReadySection />
+      <ReadySection description="Join MuslimNikah and take the first step towards a meaningful and blessed marriage." />
     </main>
   )
 }

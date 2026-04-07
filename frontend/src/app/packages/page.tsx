@@ -10,7 +10,12 @@ function packages() {
     <div>
         <PackagesHeader />
         <PricingCards />
-        <div data-aos="fade-up" data-aos-delay="100" data-aos-duration="2000">
+        <div
+          data-aos="fade-up"
+          data-aos-delay="100"
+          data-aos-duration="2000"
+          suppressHydrationWarning
+        >
         <FaqSection />
         </div>
         <PlanSection />     
