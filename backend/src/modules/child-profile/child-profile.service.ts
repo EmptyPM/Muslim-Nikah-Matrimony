@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, ConflictException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CreateChildProfileDto, UpdateChildProfileDto } from './dto/child-profile.dto';
 import { AutoFillService } from '../user/auto-fill.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ChildProfileService {
@@ -24,27 +25,60 @@ export class ChildProfileService {
       city: dto.city,
     });
 
-    // Generate unique memberId: MN-XXXXXX (6-digit zero-padded counter)
-    const count = await this.prisma.childProfile.count();
-    const memberId = `MN-${String(count + 1).padStart(6, '0')}`;
-
-    const profile = await this.prisma.childProfile.create({
-      data: {
-        ...dto,
-        dateOfBirth: new Date(dto.dateOfBirth),
-        userId,
-        memberId,
-        aboutUs: dto.aboutUs ?? generated.aboutUs,
-        expectations: dto.expectations ?? generated.expectations,
-        status: 'DRAFT',
-      },
-      include: { subscription: true },
-    });
+    // Generate unique memberId with retry to avoid race-condition collisions.
+    const maxAttempts = 5;
+    let profile: any;
+    let memberId = '';
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      memberId = await this.generateNextMemberId();
+      try {
+        profile = await this.prisma.childProfile.create({
+          data: {
+            ...dto,
+            dateOfBirth: new Date(dto.dateOfBirth),
+            userId,
+            memberId,
+            aboutUs: dto.aboutUs ?? generated.aboutUs,
+            expectations: dto.expectations ?? generated.expectations,
+            status: 'DRAFT',
+          },
+          include: { subscription: true },
+        });
+        break;
+      } catch (error) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002' &&
+          Array.isArray((error.meta as any)?.target) &&
+          (error.meta as any).target.includes('memberId')
+        ) {
+          this.logger.warn(`memberId collision on attempt ${attempt}/${maxAttempts}; retrying`);
+          continue;
+        }
+        throw error;
+      }
+    }
+    if (!profile) {
+      throw new ConflictException({
+        success: false,
+        message: 'Could not generate a unique member ID. Please try again.',
+      });
+    }
 
     this.events.emit('PROFILE_CREATED', { profileId: profile.id, userId });
     this.logger.log(`Profile CREATED: ${profile.id} (${memberId}) by user ${userId}`);
 
     return { success: true, data: profile };
+  }
+
+  private async generateNextMemberId() {
+    const lastProfile = await this.prisma.childProfile.findFirst({
+      where: { memberId: { startsWith: 'MN-' } },
+      orderBy: { memberId: 'desc' },
+      select: { memberId: true },
+    });
+    const lastNum = Number(lastProfile?.memberId?.replace('MN-', '') ?? '0');
+    return `MN-${String(lastNum + 1).padStart(6, '0')}`;
   }
 
   async update(userId: string, profileId: string, dto: UpdateChildProfileDto) {
