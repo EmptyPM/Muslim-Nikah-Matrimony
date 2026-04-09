@@ -2,16 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { adminApi, userApi } from '@/services/api';
-import { bustCurrencyCache } from '@/hooks/useCurrency';
 
 /* ─────────────────────────────────────────────────────────────────────────── */
 /*  Types                                                                       */
 /* ─────────────────────────────────────────────────────────────────────────── */
-const CURRENCIES = [
-  { code: 'LKR', name: 'Sri Lankan Rupee', symbol: 'Rs', flag: '🇱🇰', desc: 'Local Sri Lanka transactions' },
-  { code: 'USD', name: 'US Dollar', symbol: '$', flag: '🇺🇸', desc: 'International standard currency' },
-];
-
 type Tab = 'account' | 'security' | 'platform';
 
 /* ─────────────────────────────────────────────────────────────────────────── */
@@ -315,7 +309,6 @@ export default function AdminSettingsPage() {
   const [savingPw, setSavingPw] = useState(false);
 
   /* Platform */
-  const [currency, setCurrency] = useState('LKR');
   const [whatsapp, setWhatsapp] = useState('+94 705 687 697');
   const [b1n, setB1n] = useState('M T M Akram');
   const [b1no, setB1no] = useState('112054094468');
@@ -343,7 +336,6 @@ export default function AdminSettingsPage() {
         setAdminEmail(me.data?.email ?? '');
         setAdminPhone(me.data?.phone ?? '');
         const d = s.data ?? {};
-        setCurrency(d.platformCurrency ?? 'LKR');
         setWhatsapp(d.whatsappContact ?? '+94 705 687 697');
         setB1n(d.bank1AccName ?? 'M T M Akram'); setB1no(d.bank1AccNo ?? '112054094468');
         setB1b(d.bank1BankName ?? 'Sampath Bank PLC'); setB1br(d.bank1Branch ?? 'Ratmalana');
@@ -380,11 +372,10 @@ export default function AdminSettingsPage() {
     setSavingPlatform(true);
     try {
       await adminApi.updateSiteSettings({
-        platformCurrency: currency, whatsappContact: whatsapp,
+        whatsappContact: whatsapp,
         bank1AccName: b1n, bank1AccNo: b1no, bank1BankName: b1b, bank1Branch: b1br,
         bank2AccName: b2n, bank2AccNo: b2no, bank2BankName: b2b, bank2Branch: b2br,
       });
-      bustCurrencyCache();
       showToast('Platform settings saved!');
     } catch (e: any) { showToast(e.message ?? 'Failed to save', false); }
     finally { setSavingPlatform(false); }
@@ -689,58 +680,6 @@ export default function AdminSettingsPage() {
             {tab === 'platform' && (
               <div className="space-y-5">
 
-                {/* Currency */}
-                <Section
-                  title="Platform Currency"
-                  subtitle="All prices across the platform will display in the selected currency."
-                  iconBg="#F5F3FF"
-                  iconColor="#7c3aed"
-                  icon={
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="10" /><path d="M12 6v12M9 9h4.5a1.5 1.5 0 010 3H9m0 0h4.5a1.5 1.5 0 010 3H9" />
-                    </svg>
-                  }
-                >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                    {CURRENCIES.map((c) => {
-                      const sel = currency === c.code;
-                      return (
-                        <button
-                          key={c.code}
-                          type="button"
-                          onClick={() => setCurrency(c.code)}
-                          className={`relative flex items-center gap-3.5 p-4 rounded-2xl border-2 text-left transition-all duration-200 ${sel ? 'border-[#7c3aed] bg-[#F5F3FF]' : 'border-gray-200 hover:border-[#7c3aed]/30 bg-gray-50 hover:bg-gray-50'}`}
-                          style={sel ? { boxShadow: '0 4px 16px rgba(124,58,237,0.15)' } : {}}
-                        >
-                          <div className={`h-5 w-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${sel ? 'border-[#7c3aed] bg-[#7c3aed]' : 'border-gray-300 bg-white'}`}>
-                            {sel && <div className="h-2 w-2 rounded-full bg-white" />}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg leading-none">{c.flag}</span>
-                              <span className="text-sm font-bold text-gray-800">{c.code}</span>
-                              <span className="text-xs text-gray-400 font-mono bg-gray-100 px-1.5 py-0.5 rounded-lg">{c.symbol}</span>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1 leading-snug">{c.desc}</p>
-                          </div>
-                          {sel && (
-                            <div className="h-6 w-6 rounded-full bg-[#7c3aed] flex items-center justify-center flex-shrink-0">
-                              <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3.5">
-                    <svg className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
-                    </svg>
-                    <p className="text-xs text-amber-700 font-medium leading-relaxed">
-                      Changing currency only updates the <strong>symbol</strong> displayed. Package prices are stored as numbers and <strong>will not be recalculated</strong>.
-                    </p>
-                  </div>
-                </Section>
 
                 {/* WhatsApp */}
                 <Section
