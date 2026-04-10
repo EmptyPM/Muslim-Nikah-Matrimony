@@ -152,6 +152,15 @@ export class AdminService {
     return { success: true, data: updated };
   }
 
+  async changeUserPassword(id: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({ where: { id }, data: { password: hashedPassword } });
+    this.logger.log(`Admin changed password for user: ${user.email}`);
+    return { success: true, message: 'Password updated successfully' };
+  }
+
   // ─── Profiles ─────────────────────────────────────────────────
   async getAllProfiles(status?: string) {
     const profiles = await this.prisma.childProfile.findMany({

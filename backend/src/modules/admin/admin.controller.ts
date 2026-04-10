@@ -83,6 +83,11 @@ export class AdminController {
     return this.service.updateUser(id, body);
   }
 
+  @Put('users/:id/password')
+  changeUserPassword(@Param('id') id: string, @Body() body: { newPassword: string }) {
+    return this.service.changeUserPassword(id, body.newPassword);
+  }
+
   @Get('profiles')
   profiles(@Query('status') status?: string) { return this.service.getAllProfiles(status); }
 
