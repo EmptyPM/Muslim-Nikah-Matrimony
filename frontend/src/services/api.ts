@@ -220,6 +220,8 @@ export const publicProfilesApi = {
     gender?: string;
     city?: string; ethnicity?: string; civilStatus?: string;
     education?: string; occupation?: string; memberId?: string;
+    minAge?: number; maxAge?: number;
+    viewerProfileId?: string;
   }) => {
     const params = new URLSearchParams();
     if (filters?.gender) params.set('gender', filters.gender);
@@ -229,6 +231,9 @@ export const publicProfilesApi = {
     if (filters?.education) params.set('education', filters.education);
     if (filters?.occupation) params.set('occupation', filters.occupation);
     if (filters?.memberId) params.set('memberId', filters.memberId);
+    if (filters?.minAge != null) params.set('minAge', String(filters.minAge));
+    if (filters?.maxAge != null) params.set('maxAge', String(filters.maxAge));
+    if (filters?.viewerProfileId) params.set('viewerProfileId', filters.viewerProfileId);
     const qs = params.toString();
     return request<any>(`/profiles/public${qs ? `?${qs}` : ''}`);
   },

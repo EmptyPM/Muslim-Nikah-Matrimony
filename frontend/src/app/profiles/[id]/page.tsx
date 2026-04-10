@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -278,14 +278,14 @@ export default function ProfileDetailPage() {
                   onClick={handleChat}
                   className="flex items-center gap-2 bg-[#DB9D30] hover:bg-[#c98b26] text-white text-[13px] font-bold font-poppins px-5 py-2.5 rounded-xl transition shadow-lg shadow-[#DB9D30]/30"
                 >
-                  💬 Send Interest
+                  💬 Send Message
                 </button>
               ) : (
                 <div
                   title="Age or height criteria not matched"
                   className="flex items-center gap-2 bg-white/20 text-white/50 text-[13px] font-bold font-poppins px-5 py-2.5 rounded-xl cursor-not-allowed select-none"
                 >
-                  🔒 Send Interest
+                  🔒 Send Message
                 </div>
               )}
             </div>
@@ -419,11 +419,11 @@ export default function ProfileDetailPage() {
                   onClick={handleChat}
                   className="flex-shrink-0 bg-[#DB9D30] hover:bg-[#c98b26] text-white font-bold font-poppins text-[14px] px-7 py-3 rounded-xl transition shadow-lg"
                 >
-                  💬 Send Interest
+                  💬 Send Message
                 </button>
               ) : (
                 <div className="flex-shrink-0 bg-white/10 text-white/40 font-bold font-poppins text-[14px] px-7 py-3 rounded-xl cursor-not-allowed select-none">
-                  🔒 Send Interest
+                  🔒 Send Message
                 </div>
               )}
             </div>

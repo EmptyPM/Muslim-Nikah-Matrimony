@@ -18,6 +18,7 @@ import { RuleEngineModule } from './modules/rule-engine/rule-engine.module';
 import { SubscriptionCron } from './cron/subscription.cron';
 import { AppEventListener } from './events/app-events.listener';
 import { TrafficModule } from './modules/traffic/traffic.module';
+import { ActivityLogModule } from './modules/activity-log/activity-log.module';
 import { envValidationSchema } from './config/env.validation';
 
 @Module({
@@ -45,6 +46,7 @@ import { envValidationSchema } from './config/env.validation';
     VisibilityModule,
     RuleEngineModule,
     TrafficModule,
+    ActivityLogModule,
   ],
   providers: [AppService, SubscriptionCron, AppEventListener],
 })

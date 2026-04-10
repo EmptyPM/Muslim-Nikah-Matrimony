@@ -54,6 +54,7 @@ export default function ChatPage() {
   const [connected, setConnected] = useState(false);
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  const [chatError, setChatError] = useState<string | null>(null); // toast error
   const socketRef = useRef<any>(null);
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -107,14 +108,22 @@ export default function ChatPage() {
   // Load conversations
   const loadConversations = useCallback((profileId: string) => {
     chatApi.conversations(profileId).then((r) => {
-      const all: Conversation[] = [
-        ...(r.data?.sent ?? []).map((m: any) => ({ id: m.receiverProfileId, name: m.receiverProfile?.name ?? 'Unknown' })),
-        ...(r.data?.received ?? []).map((m: any) => ({ id: m.senderProfileId, name: m.senderProfile?.name ?? 'Unknown' })),
-      ];
-      if (startId && startName) all.unshift({ id: startId, name: startName });
-      const seen = new Set();
-      const deduped = all.filter(c => { if (seen.has(c.id)) return false; seen.add(c.id); return true; });
-      setConversations(deduped);
+      // Backend returns a pre-sorted flat array (newest first).
+      // Fall back to the old sent+received merge if server is older.
+      let all: Conversation[];
+      if (Array.isArray(r.data?.conversations) && r.data.conversations.length >= 0) {
+        all = r.data.conversations.map((c: any) => ({ id: c.id, name: c.name ?? 'Unknown' }));
+      } else {
+        all = [
+          ...(r.data?.sent ?? []).map((m: any) => ({ id: m.receiverProfileId, name: m.receiverProfile?.name ?? 'Unknown' })),
+          ...(r.data?.received ?? []).map((m: any) => ({ id: m.senderProfileId, name: m.senderProfile?.name ?? 'Unknown' })),
+        ];
+      }
+      // Prepend the ?start= target if coming from a profile page
+      if (startId && startName) {
+        all = [{ id: startId, name: startName }, ...all.filter(c => c.id !== startId)];
+      }
+      setConversations(all);
       if (startId) setSelectedChat(startId);
     });
   }, [startId, startName]);
@@ -194,8 +203,10 @@ export default function ChatPage() {
         // Message from someone else
         if (msg.senderProfileId !== selectedMyProfile) {
           setConversations(list => {
-            const exists = list.some(c => c.id === msg.senderProfileId);
-            return exists ? list : [{ id: msg.senderProfileId, name: 'New Message' }, ...list];
+            // Always move this partner to the TOP (latest message = first)
+            const without = list.filter(c => c.id !== msg.senderProfileId);
+            const name = list.find(c => c.id === msg.senderProfileId)?.name ?? 'New Message';
+            return [{ id: msg.senderProfileId, name }, ...without];
           });
           // If it's the open conversation — mark as read immediately (socket + REST)
           if (msg.senderProfileId === selectedChatRef.current) {
@@ -210,6 +221,13 @@ export default function ChatPage() {
               [msg.senderProfileId]: (prev[msg.senderProfileId] ?? 0) + 1,
             }));
           }
+        } else {
+          // My own message — bubble the receiver to top too
+          setConversations(list => {
+            const without = list.filter(c => c.id !== msg.receiverProfileId);
+            const name = list.find(c => c.id === msg.receiverProfileId)?.name ?? '';
+            return name ? [{ id: msg.receiverProfileId, name }, ...without] : list;
+          });
         }
         setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
         return [...prev, msg].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
@@ -218,6 +236,13 @@ export default function ChatPage() {
 
     socket.on('user_typing', ({ profileId, isTyping: t }: any) => {
       if (profileId === selectedChatRef.current) setIsTyping(t);
+    });
+
+    // ── Socket-level errors (e.g. NO_MATCH from send_message) ────────
+    socket.on('error', (err: any) => {
+      const msg = err?.message ?? 'Something went wrong';
+      setChatError(msg);
+      setTimeout(() => setChatError(null), 5000);
     });
 
     // ── Read receipts: update ticks to blue ────────────────────────
@@ -235,6 +260,7 @@ export default function ChatPage() {
       socket.off('connect');
       socket.off('disconnect');
       socket.off('messages_read');
+      socket.off('error');
     };
   }, [selectedMyProfile]);
 
@@ -298,7 +324,9 @@ export default function ChatPage() {
       }
     } catch (e: any) {
       console.error('Send failed:', e);
-      alert(`Failed to send: ${e.message}`);
+      const msg = e?.response?.data?.message ?? e?.message ?? 'Failed to send message';
+      setChatError(msg);
+      setTimeout(() => setChatError(null), 5000);
     } finally {
       setSending(false);
     }
@@ -373,7 +401,15 @@ export default function ChatPage() {
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-400 whitespace-nowrap">Chatting as:</span>
           <select value={selectedMyProfile}
-            onChange={(e) => { setSelectedMyProfile(e.target.value); setSelectedChat(''); setMessages([]); setMobileShowChat(false); }}
+            onChange={(e) => {
+              // ── Immediately wipe all state from the previous profile ──
+              setConversations([]);
+              setMessages([]);
+              setSelectedChat('');
+              setUnreadCounts({});
+              setMobileShowChat(false);
+              setSelectedMyProfile(e.target.value);
+            }}
             className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-700 bg-white outline-none focus:border-[#1C3B35] transition">
             {myProfiles.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
@@ -559,6 +595,14 @@ export default function ChatPage() {
 
               {/* Input */}
               <div className="border-t border-gray-100 bg-white">
+                {/* Toast error banner */}
+                {chatError && (
+                  <div className="mx-4 mt-3 flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+                    <span className="text-red-500 shrink-0 mt-0.5">🔒</span>
+                    <p className="text-[12px] text-red-600 font-medium font-poppins leading-snug">{chatError}</p>
+                    <button onClick={() => setChatError(null)} className="ml-auto text-red-300 hover:text-red-500 text-xs shrink-0">✕</button>
+                  </div>
+                )}
                 {/* Image preview strip */}
                 {imageFile && (
                   <div className="flex items-center gap-2 px-4 pt-3 pb-0">

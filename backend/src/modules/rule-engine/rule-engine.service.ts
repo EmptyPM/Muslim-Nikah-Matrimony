@@ -73,6 +73,31 @@ export class RuleEngineService {
       }
     }
 
+    // ── Bidirectional Country Preference ──────────────────────────────────
+    // countryPreference may be comma-separated (e.g. "Australia,United Kingdom")
+    const parsePrefs = (pref: string) =>
+      pref.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+
+    // Rule 1: If viewer has a countryPreference, target must live in one of those countries.
+    if (viewer.countryPreference && target.country) {
+      const prefs = parsePrefs(viewer.countryPreference);
+      if (!prefs.includes(target.country.toLowerCase())) {
+        const reason = `Viewer prefers [${viewer.countryPreference}] but target lives in "${target.country}"`;
+        this.logger.debug(`canViewProfile DENIED: ${reason}`);
+        return { allowed: false, reason };
+      }
+    }
+
+    // Rule 2: If target has a countryPreference, viewer must live in one of those countries.
+    if (target.countryPreference && viewer.country) {
+      const prefs = parsePrefs(target.countryPreference);
+      if (!prefs.includes(viewer.country.toLowerCase())) {
+        const reason = `Target prefers [${target.countryPreference}] but viewer lives in "${viewer.country}"`;
+        this.logger.debug(`canViewProfile DENIED: ${reason}`);
+        return { allowed: false, reason };
+      }
+    }
+
     this.logger.debug(`canViewProfile ALLOWED: viewer=${viewer.id} → target=${target.id}`);
     return { allowed: true };
   }
@@ -99,13 +124,6 @@ export class RuleEngineService {
     if (viewer.minHeightPreference && target.height) {
       if (target.height < viewer.minHeightPreference) {
         return { allowed: false, reason: `Target height ${target.height}cm below preference ${viewer.minHeightPreference}cm` };
-      }
-    }
-
-    // Country preference check
-    if (viewer.countryPreference && target.country) {
-      if (viewer.countryPreference.toLowerCase() !== target.country.toLowerCase()) {
-        return { allowed: false, reason: `Country mismatch: viewer prefers ${viewer.countryPreference}, target is ${target.country}` };
       }
     }
 

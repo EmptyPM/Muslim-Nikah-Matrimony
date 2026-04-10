@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { MailService } from './mail.service';
+import { ActivityLogModule } from '../activity-log/activity-log.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { MailService } from './mail.service';
         signOptions: { expiresIn: '7d' },
       }),
     }),
+    ActivityLogModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, MailService],

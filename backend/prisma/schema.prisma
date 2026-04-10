@@ -276,3 +276,36 @@ model PasswordResetToken {
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
 }
+
+/// Centralised audit log — every important system action lands here
+model ActivityLog {
+  id          String   @id @default(uuid())
+
+  /// Who did it (null = system / unauthenticated)
+  actorId     String?
+  actorEmail  String?
+  actorRole   String?           // 'ADMIN' | 'PARENT' | 'SYSTEM'
+
+  /// What happened
+  action      String            // e.g. 'USER_REGISTERED', 'PAYMENT_APPROVED'
+  category    String            // 'AUTH' | 'PROFILE' | 'PAYMENT' | 'ADMIN' | 'SUBSCRIPTION' | 'SYSTEM'
+
+  /// The entity that was affected (profile / user / payment id)
+  entityId    String?
+  entityLabel String?           // human-readable name, e.g. "MN-000012 – Ayesha"
+
+  /// Optional extra context (JSON blob)
+  meta        Json?
+
+  /// Severity: 'INFO' | 'WARNING' | 'ERROR'
+  level       String   @default("INFO")
+
+  ipAddress   String?
+  userAgent   String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([category])
+  @@index([actorId])
+  @@index([createdAt])
+}

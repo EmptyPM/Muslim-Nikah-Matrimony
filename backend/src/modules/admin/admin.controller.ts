@@ -30,11 +30,12 @@ export class PublicPackagesController {
     @Query('education') education?: string,
     @Query('occupation') occupation?: string,
     @Query('memberId') memberId?: string,
+    @Query('viewerProfileId') viewerProfileId?: string,
   ) {
     return this.service.getPublicProfiles({
       minAge: minAge ? parseInt(minAge) : undefined,
       maxAge: maxAge ? parseInt(maxAge) : undefined,
-      gender, city, ethnicity, civilStatus, education, occupation, memberId,
+      gender, city, ethnicity, civilStatus, education, occupation, memberId, viewerProfileId,
     });
   }
 

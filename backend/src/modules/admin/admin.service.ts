@@ -5,6 +5,7 @@ import { PaymentService } from '../payment/payment.service';
 import { ApprovePaymentDto, RejectPaymentDto, CreatePackageDto, UpdateSiteSettingsDto } from './dto/admin.dto';
 import { PaymentStatus, ProfileStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { ActivityLogService } from '../activity-log/activity-log.service';
 
 export { ApprovePaymentDto, RejectPaymentDto, CreatePackageDto, UpdateSiteSettingsDto };
 
@@ -16,6 +17,7 @@ export class AdminService {
     private readonly prisma: PrismaService,
     private readonly events: EventEmitter2,
     private readonly paymentService: PaymentService,
+    private readonly activityLog: ActivityLogService,
   ) {}
 
   // ─── Payments ─────────────────────────────────────────────────────────────
@@ -49,6 +51,13 @@ export class AdminService {
 
     this.events.emit('PAYMENT_SUCCESS', { paymentId: payment.id, profileId: payment.childProfileId, approvedBy: adminId });
     this.logger.log(`Admin APPROVED payment: ${payment.id} → ${durationDays} days subscription`);
+    this.activityLog.log({
+      actorId: adminId, actorRole: 'ADMIN',
+      action: 'PAYMENT_APPROVED', category: 'PAYMENT',
+      entityId: payment.id,
+      entityLabel: `Payment ${payment.id.slice(0, 8)} (${payment.purpose})`,
+      meta: { durationDays, planName, profileId: payment.childProfileId },
+    });
     return { success: true, message: `Payment approved — profile activated for ${durationDays} days` };
   }
 
@@ -73,6 +82,13 @@ export class AdminService {
     });
 
     this.logger.log(`Admin REJECTED payment: ${payment.id} — reason: ${dto.reason} (purpose: ${payment.purpose})`);
+    this.activityLog.log({
+      actorId: adminId, actorRole: 'ADMIN',
+      action: 'PAYMENT_REJECTED', category: 'PAYMENT', level: 'WARNING',
+      entityId: payment.id,
+      entityLabel: `Payment ${payment.id.slice(0, 8)} (${payment.purpose})`,
+      meta: { reason: dto.reason, purpose: payment.purpose, profileId: payment.childProfileId },
+    });
     return { success: true, message: 'Payment rejected' };
   }
 
@@ -136,6 +152,12 @@ export class AdminService {
       select: { id: true, email: true, role: true, phone: true, createdAt: true },
     });
     this.logger.log(`Admin created user: ${user.email} (${user.role})`);
+    this.activityLog.log({
+      actorId: undefined, actorRole: 'ADMIN',
+      action: 'ADMIN_USER_CREATED', category: 'ADMIN',
+      entityId: user.id, entityLabel: user.email,
+      meta: { role: user.role },
+    });
     return { success: true, data: user };
   }
 
@@ -158,6 +180,11 @@ export class AdminService {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await this.prisma.user.update({ where: { id }, data: { password: hashedPassword } });
     this.logger.log(`Admin changed password for user: ${user.email}`);
+    this.activityLog.log({
+      actorRole: 'ADMIN',
+      action: 'ADMIN_PASSWORD_CHANGED', category: 'ADMIN',
+      entityId: id, entityLabel: user.email,
+    });
     return { success: true, message: 'Password updated successfully' };
   }
 
@@ -327,6 +354,7 @@ export class AdminService {
     minAge?: number; maxAge?: number; gender?: string;
     city?: string; ethnicity?: string; civilStatus?: string;
     education?: string; occupation?: string; memberId?: string;
+    viewerProfileId?: string;
   }) {
     const where: any = { status: 'ACTIVE' };
     if (filters.gender) where.gender = filters.gender;
@@ -337,6 +365,31 @@ export class AdminService {
     if (filters.occupation) where.occupation = { contains: filters.occupation, mode: 'insensitive' };
     if (filters.memberId) where.memberId = { contains: filters.memberId.toUpperCase(), mode: 'insensitive' };
 
+    // Load viewer profile for country preference checks (if logged in)
+    let viewerCountry: string | null = null;
+    let viewerCountryPreference: string | null = null;
+    if (filters.viewerProfileId) {
+      const viewer = await this.prisma.childProfile.findUnique({
+        where: { id: filters.viewerProfileId },
+        select: { country: true, countryPreference: true },
+      });
+      if (viewer) {
+        viewerCountry = viewer.country ?? null;
+        viewerCountryPreference = viewer.countryPreference ?? null;
+      }
+    }
+
+    // If viewer has a country preference, restrict DB query to those countries
+    // countryPreference is comma-separated e.g. "Australia,United Kingdom"
+    if (viewerCountryPreference) {
+      const prefList = viewerCountryPreference.split(',').map(s => s.trim()).filter(Boolean);
+      if (prefList.length === 1) {
+        where.country = { equals: prefList[0], mode: 'insensitive' };
+      } else if (prefList.length > 1) {
+        where.country = { in: prefList };
+      }
+    }
+
     const allProfiles: any[] = await this.prisma.childProfile.findMany({
       where,
       select: {
@@ -346,6 +399,7 @@ export class AdminService {
         createdAt: true, status: true,
         showRealName: true, nickname: true,
         boostExpiresAt: true,
+        countryPreference: true,
       } as any,
       orderBy: { createdAt: 'desc' },
     });
@@ -357,14 +411,23 @@ export class AdminService {
         const age = Math.floor((now.getTime() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
         const displayName = !p.showRealName && p.nickname ? p.nickname : p.name;
         const isVip = p.boostExpiresAt && new Date(p.boostExpiresAt) > now;
-        const { showRealName, nickname, boostExpiresAt, ...rest } = p;
-        return { ...rest, name: displayName, age, isVip };
+        const { showRealName, nickname, boostExpiresAt, countryPreference, ...rest } = p;
+        return { ...rest, name: displayName, age, isVip, _countryPreference: countryPreference };
       })
       .filter(p => {
         if (filters.minAge && p.age < filters.minAge) return false;
         if (filters.maxAge && p.age > filters.maxAge) return false;
+
+        // Rule 2: If target has a countryPreference, viewer must live in one of those countries
+        // countryPreference is comma-separated e.g. "Australia,United Kingdom"
+        if (p._countryPreference && viewerCountry) {
+          const prefs = p._countryPreference.split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean);
+          if (!prefs.includes(viewerCountry.toLowerCase())) return false;
+        }
+
         return true;
       })
+      .map(({ _countryPreference, ...p }) => p)  // strip internal field
       .sort((a, b) => (b.isVip === a.isVip ? 0 : b.isVip ? 1 : -1));
 
     return { success: true, data: filtered, total: filtered.length };

@@ -2,6 +2,7 @@ import { Injectable, ForbiddenException, Logger, BadRequestException } from '@ne
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SendMessageDto } from './dto/chat.dto';
+import { RuleEngineService } from '../rule-engine/rule-engine.service';
 
 @Injectable()
 export class ChatService {
@@ -10,6 +11,7 @@ export class ChatService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly events: EventEmitter2,
+    private readonly ruleEngine: RuleEngineService,
   ) {}
 
   async send(userId: string, dto: SendMessageDto) {
@@ -21,6 +23,7 @@ export class ChatService {
     if (!senderProfile || !receiverProfile) {
       throw new BadRequestException({ success: false, message: 'Profile not found', error_code: 'NOT_FOUND' });
     }
+    // ── Security: sender must own the profile ──────────────────────────────
     if (senderProfile.userId !== userId) {
       throw new ForbiddenException({ success: false, message: 'You do not own this profile', error_code: 'FORBIDDEN' });
     }
@@ -32,6 +35,25 @@ export class ChatService {
     }
     if (receiverProfile.status !== 'ACTIVE') {
       throw new ForbiddenException({ success: false, message: 'Receiver profile is not active', error_code: 'RECEIVER_INACTIVE' });
+    }
+
+    // ── Matchmaking eligibility check (RuleEngine) ─────────────────────────
+    // Both profiles must satisfy the full visibility rules:
+    // gender, age, and bidirectional country preference.
+    const eligibility = this.ruleEngine.canViewProfile({
+      viewer: senderProfile as any,
+      target: receiverProfile as any,
+    });
+    if (!eligibility.allowed) {
+      this.logger.warn(
+        `Chat BLOCKED: ${senderProfile.memberId} → ${receiverProfile.memberId} — ${eligibility.reason}`,
+      );
+      throw new ForbiddenException({
+        success: false,
+        message: 'You are not eligible to chat with this profile based on matchmaking rules.',
+        detail: eligibility.reason,
+        error_code: 'NO_MATCH',
+      });
     }
 
     const message = await this.prisma.chatMessage.create({
@@ -64,19 +86,82 @@ export class ChatService {
   }
 
   async getConversations(profileId: string) {
-    const sent = await this.prisma.chatMessage.findMany({
-      where: { senderProfileId: profileId },
-      select: { receiverProfileId: true, receiverProfile: { select: { id: true, name: true } }, createdAt: true },
-      distinct: ['receiverProfileId'],
-      orderBy: { createdAt: 'desc' },
+    // Load viewer profile for matchmaking checks
+    const viewer = await this.prisma.childProfile.findUnique({
+      where: { id: profileId },
+      include: { subscription: true },
     });
-    const received = await this.prisma.chatMessage.findMany({
-      where: { receiverProfileId: profileId },
-      select: { senderProfileId: true, senderProfile: { select: { id: true, name: true } }, createdAt: true },
-      distinct: ['senderProfileId'],
-      orderBy: { createdAt: 'desc' },
+
+    // ── Get latest message timestamp per unique partner (both directions) ──
+    const [sentGroups, receivedGroups] = await Promise.all([
+      // messages I sent: group by receiverProfileId, pick max createdAt
+      this.prisma.chatMessage.groupBy({
+        by: ['receiverProfileId'],
+        where: { senderProfileId: profileId },
+        _max: { createdAt: true },
+      }),
+      // messages I received: group by senderProfileId, pick max createdAt
+      this.prisma.chatMessage.groupBy({
+        by: ['senderProfileId'],
+        where: { receiverProfileId: profileId },
+        _max: { createdAt: true },
+      }),
+    ]);
+
+    // Build a map of partnerId → latest timestamp (merge both directions)
+    const latestByPartner = new Map<string, Date>();
+    for (const row of sentGroups) {
+      const ts = row._max.createdAt;
+      if (ts) latestByPartner.set(row.receiverProfileId, ts);
+    }
+    for (const row of receivedGroups) {
+      const ts = row._max.createdAt;
+      if (!ts) continue;
+      const existing = latestByPartner.get(row.senderProfileId);
+      if (!existing || ts > existing) {
+        latestByPartner.set(row.senderProfileId, ts);
+      }
+    }
+
+    if (latestByPartner.size === 0) {
+      return { success: true, data: { sent: [], received: [], conversations: [] } };
+    }
+
+    // If we can't load viewer, skip eligibility filter
+    let eligibleIds: Set<string>;
+    if (!viewer) {
+      eligibleIds = new Set(latestByPartner.keys());
+    } else {
+      // ── Eligibility filter (RuleEngine) ────────────────────────────────
+      const partnerProfiles = await this.prisma.childProfile.findMany({
+        where: { id: { in: [...latestByPartner.keys()] } },
+        include: { subscription: true },
+      });
+
+      eligibleIds = new Set(
+        partnerProfiles
+          .filter(partner => this.ruleEngine.canViewProfile({ viewer: viewer as any, target: partner as any }).allowed)
+          .map(p => p.id),
+      );
+    }
+
+    // Fetch partner names for eligible IDs
+    const partnerNames = await this.prisma.childProfile.findMany({
+      where: { id: { in: [...eligibleIds] } },
+      select: { id: true, name: true },
     });
-    return { success: true, data: { sent, received } };
+    const nameMap = new Map(partnerNames.map(p => [p.id, p.name]));
+
+    // Build sorted flat conversation list (newest first)
+    const conversations = [...eligibleIds]
+      .map(id => ({ id, name: nameMap.get(id) ?? 'Unknown', lastMessageAt: latestByPartner.get(id)! }))
+      .sort((a, b) => b.lastMessageAt.getTime() - a.lastMessageAt.getTime());
+
+    // Keep legacy sent/received shape for backward-compat (frontend uses it too)
+    const sent     = conversations.map(c => ({ receiverProfileId: c.id, receiverProfile: { id: c.id, name: c.name }, createdAt: c.lastMessageAt }));
+    const received = [] as any[];
+
+    return { success: true, data: { sent, received, conversations } };
   }
 
   /** Returns per-sender unread counts for myProfileId (for badge polling) */

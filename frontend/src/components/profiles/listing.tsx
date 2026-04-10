@@ -21,6 +21,8 @@ type UserProfile = {
 
 type Filters = {
   memberId: string;
+  minAge: string;
+  maxAge: string;
   gender: string;
   country: string; city: string; ethnicity: string; civilStatus: string;
   education: string; occupation: string;
@@ -28,6 +30,7 @@ type Filters = {
 
 const EMPTY_FILTERS: Filters = {
   memberId: '',
+  minAge: '', maxAge: '',
   gender: '', country: '', city: '', ethnicity: '', civilStatus: '', education: '', occupation: '',
 };
 
@@ -108,12 +111,15 @@ export default function ProfilesListing() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const PER_PAGE = 9;
   const [masterData, setMasterData] = useState<MasterData | null>(null);
+  const [ageRangeDefaults, setAgeRangeDefaults] = useState({ min: 18, max: 65 });
 
   const [activeProfiles, setActiveProfiles] = useState<any[]>([]);
 
   /* ── 0. Load master data for filter dropdowns ── */
   useEffect(() => {
-    setMasterData(loadMasterData());
+    const md = loadMasterData();
+    setMasterData(md);
+    setAgeRangeDefaults(md.ageRange);
   }, []);
 
   /* ── 1. Check login & load user's active profiles ── */
@@ -174,6 +180,9 @@ export default function ProfilesListing() {
       education: f.education || undefined,
       occupation: f.occupation || undefined,
       memberId: f.memberId || undefined,
+      minAge: f.minAge ? parseInt(f.minAge) : undefined,
+      maxAge: f.maxAge ? parseInt(f.maxAge) : undefined,
+      viewerProfileId: selectedProfile?.id || undefined,
     })
       .then(r => {
         // Exclude the viewer's own profiles from the results
@@ -184,7 +193,7 @@ export default function ProfilesListing() {
       })
       .catch(() => { setProfiles([]); setTotal(0); })
       .finally(() => setLoading(false));
-  }, [userProfiles]);
+  }, [userProfiles, selectedProfile]);
 
   useEffect(() => { load(applied); }, [applied, load]);
 
@@ -276,7 +285,7 @@ export default function ProfilesListing() {
     maritalStatus: p.civilStatus ?? 'Single',
     education: p.education ?? '–',
     job: p.occupation ?? '–',
-    joinedDaysAgo: Math.floor((Date.now() - new Date(p.createdAt).getTime()) / 86400000),
+    joinedMs: Date.now() - new Date(p.createdAt).getTime(),
   });
 
   /* ════════════════════════════════════════════════════════════ */
@@ -398,6 +407,44 @@ export default function ProfilesListing() {
       </div>
 
       <div className="border-t border-gray-100 pt-3">
+
+        {/* Age Range */}
+        <FilterSection label="Age Range">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-[11px] text-gray-500">
+              <span>Range</span>
+              <span className="font-semibold text-[#1C3B35] font-poppins">
+                {filters.minAge || ageRangeDefaults.min} – {filters.maxAge || ageRangeDefaults.max}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="block text-[10px] text-gray-400 font-poppins mb-0.5">Min</label>
+                <input
+                  type="number"
+                  min={ageRangeDefaults.min}
+                  max={ageRangeDefaults.max - 1}
+                  placeholder={String(ageRangeDefaults.min)}
+                  value={filters.minAge}
+                  onChange={e => setFilters(f => ({ ...f, minAge: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] outline-none focus:border-[#1C3B35] font-poppins"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-[10px] text-gray-400 font-poppins mb-0.5">Max</label>
+                <input
+                  type="number"
+                  min={ageRangeDefaults.min + 1}
+                  max={ageRangeDefaults.max}
+                  placeholder={String(ageRangeDefaults.max)}
+                  value={filters.maxAge}
+                  onChange={e => setFilters(f => ({ ...f, maxAge: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] outline-none focus:border-[#1C3B35] font-poppins"
+                />
+              </div>
+            </div>
+          </div>
+        </FilterSection>
 
         {!selectedProfile && (
           <FilterSection label="Gender" defaultOpen>
