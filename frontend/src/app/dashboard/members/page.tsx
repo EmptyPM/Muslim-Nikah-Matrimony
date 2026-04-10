@@ -157,7 +157,7 @@ export default function BrowseMembersPage() {
     maritalStatus: p.civilStatus ?? 'Single',
     education: p.education ?? '–',
     job: p.occupation ?? '–',
-    joinedDaysAgo: Math.floor((Date.now() - new Date(p.createdAt).getTime()) / 86400000),
+    joinedMs: Date.now() - new Date(p.createdAt).getTime(),
   });
 
   const handleChat = (p: Profile) => {

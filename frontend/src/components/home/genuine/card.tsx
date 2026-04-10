@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -17,7 +17,7 @@ export type ProfileCardProps = {
     maritalStatus: string;
     education: string;
     job: string;
-    joinedDaysAgo: number;
+    joinedMs: number;
     profileImage?: string;
     memberId?: string;
     isVip?: boolean;
@@ -46,6 +46,19 @@ function daysAgo(iso?: string): number {
     return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
 }
 
+/** Smart-format elapsed milliseconds → "Xh ago", "X day(s) ago", "X month(s) ago", "X year(s) ago" */
+function smartJoinedTime(ms: number): string {
+    const hours = Math.floor(ms / (1000 * 60 * 60));
+    const days  = Math.floor(ms / (1000 * 60 * 60 * 24));
+    const months = Math.floor(days / 30.44);
+    const years  = Math.floor(days / 365.25);
+
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 31)  return days === 1 ? '1 day ago' : `${days} days ago`;
+    if (months < 13) return months === 1 ? '1 month ago' : `${months} months ago`;
+    return years === 1 ? '1 year ago' : `${years} years ago`;
+}
+
 function mapApiToCard(p: any): ProfileCardProps {
     return {
         name: p.name ?? 'Profile',
@@ -59,7 +72,7 @@ function mapApiToCard(p: any): ProfileCardProps {
         maritalStatus: p.civilStatus ?? 'Single',
         education: p.education ?? '–',
         job: p.occupation ?? '–',
-        joinedDaysAgo: daysAgo(p.createdAt),
+        joinedMs: Date.now() - new Date(p.createdAt ?? 0).getTime(),
         memberId: p.memberId,
         isVip: !!p.isVip,
     };
@@ -300,7 +313,7 @@ const GenuineProfileCard = ({
     maritalStatus,
     education,
     job,
-    joinedDaysAgo,
+    joinedMs,
     profileImage,
     memberId,
     isVip,
@@ -388,7 +401,7 @@ const GenuineProfileCard = ({
                     <>
                         <div className="border-t border-dashed border-gray-700 mt-2 mb-3" />
                         <p className="text-center text-[11px] lg:text-[13px] xl:text-[15px] 2xl:text-[17px] text-[#010806A1]/80 font-poppins mb-3">
-                            Joined {joinedDaysAgo} days ago
+                            Joined {smartJoinedTime(joinedMs)}
                         </p>
                         <div className="flex gap-2 w-full">
                             <button onClick={onViewClick} className="flex-1 bg-white hover:bg-gray-50 border border-gray-200 text-[#1C3B35] transition-all duration-150 text-[12px] sm:text-[13px] lg:text-[14px] font-medium font-poppins py-2 rounded-xl shadow-sm">

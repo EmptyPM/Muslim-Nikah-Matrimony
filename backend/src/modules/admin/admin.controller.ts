@@ -30,11 +30,12 @@ export class PublicPackagesController {
     @Query('education') education?: string,
     @Query('occupation') occupation?: string,
     @Query('memberId') memberId?: string,
+    @Query('viewerProfileId') viewerProfileId?: string,
   ) {
     return this.service.getPublicProfiles({
       minAge: minAge ? parseInt(minAge) : undefined,
       maxAge: maxAge ? parseInt(maxAge) : undefined,
-      gender, city, ethnicity, civilStatus, education, occupation, memberId,
+      gender, city, ethnicity, civilStatus, education, occupation, memberId, viewerProfileId,
     });
   }
 
@@ -81,6 +82,11 @@ export class AdminController {
   @Put('users/:id')
   updateUser(@Param('id') id: string, @Body() body: { phone?: string; whatsappNumber?: string; role?: string }) {
     return this.service.updateUser(id, body);
+  }
+
+  @Put('users/:id/password')
+  changeUserPassword(@Param('id') id: string, @Body() body: { newPassword: string }) {
+    return this.service.changeUserPassword(id, body.newPassword);
   }
 
   @Get('profiles')

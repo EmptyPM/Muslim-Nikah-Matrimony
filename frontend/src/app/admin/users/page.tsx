@@ -25,6 +25,14 @@ export default function AdminUsersPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [openAction, setOpenAction] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<User | null>(null);
+  const [changePwUser, setChangePwUser] = useState<User | null>(null);
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState('');
+  const [pwSuccess, setPwSuccess] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const PER_PAGE = 10;
@@ -104,6 +112,34 @@ export default function AdminUsersPage() {
   const handleDeleteAccount = (u: User) => {
     setOpenAction(null);
     setDeleteConfirm(u);
+  };
+
+  const handleChangePassword = (u: User) => {
+    setOpenAction(null);
+    setChangePwUser(u);
+    setNewPw('');
+    setConfirmPw('');
+    setPwError('');
+    setPwSuccess('');
+    setShowNewPw(false);
+    setShowConfirmPw(false);
+  };
+
+  const submitChangePassword = async () => {
+    if (!changePwUser) return;
+    if (newPw.length < 8) { setPwError('Password must be at least 8 characters.'); return; }
+    if (newPw !== confirmPw) { setPwError('Passwords do not match.'); return; }
+    setPwError('');
+    setPwSaving(true);
+    try {
+      await adminApi.changeUserPassword(changePwUser.id, newPw);
+      setPwSuccess('Password changed successfully!');
+      setTimeout(() => setChangePwUser(null), 1800);
+    } catch (e: any) {
+      setPwError(e?.message ?? 'Failed to change password.');
+    } finally {
+      setPwSaving(false);
+    }
   };
 
   const confirmDelete = () => {
@@ -362,6 +398,17 @@ export default function AdminUsersPage() {
                             </svg>
                             Edit Account
                           </button>
+                          {/* Change Password */}
+                          <button
+                            onClick={() => handleChangePassword(u)}
+                            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition"
+                          >
+                            <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                            Change Password
+                          </button>
                           {/* Divider */}
                           <div className="border-t border-gray-100 my-1" />
                           {/* Delete Account */}
@@ -412,6 +459,105 @@ export default function AdminUsersPage() {
           </div>
         )}
       </div>
+
+      {/* ── Change Password Modal ── */}
+      {changePwUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-5">
+              <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-sm">Change Password</h3>
+                <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[200px]">{changePwUser.email}</p>
+              </div>
+            </div>
+
+            {/* New Password */}
+            <div className="mb-3">
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">New Password</label>
+              <div className="relative">
+                <input
+                  type={showNewPw ? 'text' : 'password'}
+                  value={newPw}
+                  onChange={e => { setNewPw(e.target.value); setPwError(''); setPwSuccess(''); }}
+                  placeholder="Min. 8 characters"
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 pr-10 text-sm outline-none focus:border-amber-400 transition bg-gray-50 focus:bg-white"
+                />
+                <button type="button" onClick={() => setShowNewPw(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition">
+                  {showNewPw
+                    ? <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                    : <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  }
+                </button>
+              </div>
+            </div>
+
+            {/* Confirm Password */}
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Confirm Password</label>
+              <div className="relative">
+                <input
+                  type={showConfirmPw ? 'text' : 'password'}
+                  value={confirmPw}
+                  onChange={e => { setConfirmPw(e.target.value); setPwError(''); setPwSuccess(''); }}
+                  placeholder="Repeat password"
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 pr-10 text-sm outline-none focus:border-amber-400 transition bg-gray-50 focus:bg-white"
+                />
+                <button type="button" onClick={() => setShowConfirmPw(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition">
+                  {showConfirmPw
+                    ? <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                    : <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  }
+                </button>
+              </div>
+            </div>
+
+            {/* Feedback */}
+            {pwError && (
+              <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 mb-3 flex items-center gap-1.5">
+                <span>⚠</span>{pwError}
+              </p>
+            )}
+            {pwSuccess && (
+              <p className="text-xs text-green-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2 mb-3 flex items-center gap-1.5">
+                <span>✓</span>{pwSuccess}
+              </p>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-2.5">
+              <button
+                onClick={() => setChangePwUser(null)}
+                disabled={pwSaving}
+                className="flex-1 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitChangePassword}
+                disabled={pwSaving || !newPw || !confirmPw}
+                className="flex-1 py-2 rounded-xl bg-amber-500 text-sm font-semibold text-white hover:bg-amber-600 transition disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {pwSaving && (
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                )}
+                {pwSaving ? 'Saving…' : 'Update Password'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (

@@ -1,4 +1,4 @@
-﻿const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3002/api';
+const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3002/api';
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -155,6 +155,8 @@ export const adminApi = {
   getUser: (id: string) => request<any>(`/admin/users/${id}`),
   updateUser: (id: string, body: { phone?: string; whatsappNumber?: string; role?: string }) =>
     request<any>(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  changeUserPassword: (id: string, newPassword: string) =>
+    request<any>(`/admin/users/${id}/password`, { method: 'PUT', body: JSON.stringify({ newPassword }) }),
   profiles: (status?: string) => request<any>(`/admin/profiles${status ? `?status=${status}` : ''}`),
   getProfile: (id: string) => request<any>(`/admin/profiles/${id}`),
 
@@ -218,6 +220,8 @@ export const publicProfilesApi = {
     gender?: string;
     city?: string; ethnicity?: string; civilStatus?: string;
     education?: string; occupation?: string; memberId?: string;
+    minAge?: number; maxAge?: number;
+    viewerProfileId?: string;
   }) => {
     const params = new URLSearchParams();
     if (filters?.gender) params.set('gender', filters.gender);
@@ -227,6 +231,9 @@ export const publicProfilesApi = {
     if (filters?.education) params.set('education', filters.education);
     if (filters?.occupation) params.set('occupation', filters.occupation);
     if (filters?.memberId) params.set('memberId', filters.memberId);
+    if (filters?.minAge != null) params.set('minAge', String(filters.minAge));
+    if (filters?.maxAge != null) params.set('maxAge', String(filters.maxAge));
+    if (filters?.viewerProfileId) params.set('viewerProfileId', filters.viewerProfileId);
     const qs = params.toString();
     return request<any>(`/profiles/public${qs ? `?${qs}` : ''}`);
   },

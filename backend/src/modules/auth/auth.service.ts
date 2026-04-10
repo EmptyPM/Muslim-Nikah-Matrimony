@@ -11,6 +11,7 @@ import { RegisterDto, LoginDto } from './dto/auth.dto';
 import { MailService } from './mail.service';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import { ActivityLogService } from '../activity-log/activity-log.service';
 
 @Injectable()
 export class AuthService {
@@ -20,6 +21,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly mail: MailService,
+    private readonly activityLog: ActivityLogService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -32,6 +34,11 @@ export class AuthService {
     });
 
     this.logger.log(`New user registered: ${user.email}`);
+    this.activityLog.log({
+      actorId: user.id, actorEmail: user.email, actorRole: user.role,
+      action: 'USER_REGISTERED', category: 'AUTH',
+      entityId: user.id, entityLabel: user.email,
+    });
 
     const token = this.signToken(user.id, user.email, user.role);
     return { success: true, token, user: { id: user.id, email: user.email, role: user.role } };
@@ -45,6 +52,11 @@ export class AuthService {
     if (!valid) throw new UnauthorizedException({ success: false, message: 'Invalid credentials', error_code: 'INVALID_CREDENTIALS' });
 
     this.logger.log(`User logged in: ${user.email}`);
+    this.activityLog.log({
+      actorId: user.id, actorEmail: user.email, actorRole: user.role,
+      action: 'USER_LOGIN', category: 'AUTH',
+      entityId: user.id, entityLabel: user.email,
+    });
 
     const token = this.signToken(user.id, user.email, user.role);
     return { success: true, token, user: { id: user.id, email: user.email, role: user.role } };
@@ -129,6 +141,11 @@ export class AuthService {
     });
 
     this.logger.log(`Password reset successful for ${record.user.email}`);
+    this.activityLog.log({
+      actorId: record.userId, actorEmail: record.user.email, actorRole: record.user.role,
+      action: 'PASSWORD_RESET', category: 'AUTH',
+      entityId: record.userId, entityLabel: record.user.email,
+    });
     return { success: true, message: 'Password updated successfully. You can now log in.' };
   }
 

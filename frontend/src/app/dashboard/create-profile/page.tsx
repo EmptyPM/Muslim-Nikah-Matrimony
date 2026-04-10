@@ -113,12 +113,13 @@ function Select({ label, name, value, onChange, options, required = false, error
   );
 }
 
-function DobPicker({ day, month, year, onChange, error }: {
+function DobPicker({ day, month, year, onChange, error, minAge = 18 }: {
   day: string; month: string; year: string;
   onChange: (field: 'dob_day' | 'dob_month' | 'dob_year', value: string) => void;
   error?: string;
+  minAge?: number;
 }) {
-  const maxYear = new Date().getFullYear() - 16;
+  const maxYear = new Date().getFullYear() - minAge;
   const years = Array.from({ length: maxYear - 1939 }, (_, i) => maxYear - i);
   const daysInMonth = month && year ? new Date(Number(year), Number(month), 0).getDate() : 31;
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
@@ -142,6 +143,7 @@ function DobPicker({ day, month, year, onChange, error }: {
           {years.map(y => <option key={y} value={String(y)}>{y}</option>)}
         </select>
       </div>
+      <p className="text-[10px] text-gray-400 mt-1">Must be at least {minAge} years old.</p>
       {error && <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1"><span>⚠</span>{error}</p>}
     </div>
   );
@@ -269,6 +271,7 @@ export default function CreateProfilePage() {
   // ── Validation per step ────────────────────────────────────────────────────
   const validateStep = (s: number): Record<string, string> => {
     const errs: Record<string, string> = {};
+    const minAge = masterData?.ageRange?.min ?? 18;
     if (s === 0) {
       if (!form.firstName?.trim()) errs.firstName = 'First name is required.';
       if (!form.lastName?.trim()) errs.lastName = 'Last name is required.';
@@ -278,8 +281,8 @@ export default function CreateProfilePage() {
         errs.dateOfBirth = 'Date of birth is required.';
       } else {
         const birth = new Date(form.dateOfBirth);
-        const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - 16);
-        if (birth > cutoff) errs.dateOfBirth = 'You must be at least 16 years old.';
+        const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - minAge);
+        if (birth > cutoff) errs.dateOfBirth = `You must be at least ${minAge} years old.`;
       }
       if (!form.height) errs.height = 'Please select a height.';
       if (!form.appearance) errs.appearance = 'Please select an appearance.';
@@ -457,6 +460,10 @@ export default function CreateProfilePage() {
                   <Field label="First Name" name="firstName" value={form.firstName} onChange={handleField} placeholder="Enter your first name" required error={fieldErrors.firstName} />
                   <Field label="Last Name" name="lastName" value={form.lastName} onChange={handleField} placeholder="Enter your last name" required error={fieldErrors.lastName} />
                 </div>
+                <p className="-mt-2 flex items-center gap-1.5 text-[11px] text-gray-400">
+                  <svg className="w-3.5 h-3.5 shrink-0 text-[#1C3B35]/50" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  You can hide your real name and use a nickname from&nbsp;<a href="/dashboard/settings" className="text-[#1C3B35] font-medium underline underline-offset-2 hover:opacity-80 transition">User Settings</a>.
+                </p>
                 <div className={g2}>
                   <Select label="Created By" name="createdBy" value={form.createdBy} onChange={handleField} options={CREATED_BY_OPTS} required error={fieldErrors.createdBy} />
                   <Select label="Gender" name="gender" value={form.gender} onChange={handleField}
@@ -464,7 +471,7 @@ export default function CreateProfilePage() {
                     required error={fieldErrors.gender} />
                 </div>
                 <div className="grid grid-cols-1">
-                  <DobPicker day={form.dob_day} month={form.dob_month} year={form.dob_year} onChange={handleDob} error={fieldErrors.dateOfBirth} />
+                  <DobPicker day={form.dob_day} month={form.dob_month} year={form.dob_year} onChange={handleDob} error={fieldErrors.dateOfBirth} minAge={masterData?.ageRange?.min ?? 18} />
                 </div>
                 <div className={g2}>
                   <Select label="Height" name="height" value={form.height} onChange={handleField}

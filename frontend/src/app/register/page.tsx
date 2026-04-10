@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { authApi, profileApi } from "@/services/api";
@@ -317,33 +317,34 @@ function DateField({
 }
 
 /* ─── Step Forms ─── */
-/* ── Age helpers ── */
-function getMaxBirthDate(): string {
+/* ── Age helpers (minAge driven by admin master file) ── */
+function getMaxBirthDate(minAge: number): string {
   const d = new Date();
-  d.setFullYear(d.getFullYear() - 16);
-  return d.toISOString().split("T")[0];
+  d.setFullYear(d.getFullYear() - minAge);
+  return d.toISOString().split('T')[0];
 }
 function getMinBirthDate(): string {
   const d = new Date();
   d.setFullYear(d.getFullYear() - 100);
-  return d.toISOString().split("T")[0];
+  return d.toISOString().split('T')[0];
 }
-function isAtLeast16(dateStr: string): boolean {
+function isAtLeastMinAge(dateStr: string, minAge: number): boolean {
   if (!dateStr) return false;
   const birth = new Date(dateStr);
   const cutoff = new Date();
-  cutoff.setFullYear(cutoff.getFullYear() - 16);
+  cutoff.setFullYear(cutoff.getFullYear() - minAge);
   return birth <= cutoff;
 }
 
 function Step1({
-  data, onChange, fieldErrors,
+  data, onChange, fieldErrors, minAge = 18,
 }: {
   data: Record<string, string>;
   onChange: (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => void;
   fieldErrors?: Record<string, string>;
+  minAge?: number;
 }) {
-  const maxBirth = getMaxBirthDate();
+  const maxBirth = getMaxBirthDate(minAge);
   const minBirth = getMinBirthDate();
   return (
     <div>
@@ -352,14 +353,21 @@ function Step1({
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <TextField label="First Name" name="firstName" placeholder="Enter your first name" value={data.firstName || ""} onChange={onChange} error={fieldErrors?.firstName} />
         <TextField label="Last Name" name="lastName" placeholder="Enter your last name" value={data.lastName || ""} onChange={onChange} error={fieldErrors?.lastName} />
+      </div>
+      <p className="mt-1 flex items-center gap-1.5 text-[11px] text-gray-400">
+        <svg className="w-3.5 h-3.5 shrink-0 text-[#1B6B4A]/50" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        You can hide your real name and use a nickname from&nbsp;<span className="text-[#1B6B4A] font-medium">User Settings</span> after registration.
+      </p>
+      <div className="mt-0 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <SelectField label="Created By" name="createdBy" options={["Self", "Parent", "Guardian", "Sibling"]} value={data.createdBy || ""} onChange={onChange} error={fieldErrors?.createdBy} />
         <SelectField label="Gender" name="gender" options={["Male", "Female"]} value={data.gender || ""} onChange={onChange} error={fieldErrors?.gender} />
         <div className="flex flex-col gap-1">
           <DateField label="Birth Date" name="birthDate" value={data.birthDate || ""} onChange={onChange} max={maxBirth} min={minBirth} />
           {fieldErrors?.birthDate && <p className="text-xs text-red-500 flex items-center gap-1"><span>⚠</span>{fieldErrors.birthDate}</p>}
-          {data.birthDate && !isAtLeast16(data.birthDate) && (
-            <p className="text-xs text-red-500 mt-1">⚠ You must be at least 16 years old to register.</p>
+          {data.birthDate && !isAtLeastMinAge(data.birthDate, minAge) && (
+            <p className="text-xs text-red-500 mt-1">⚠ You must be at least {minAge} years old to register.</p>
           )}
+          <p className="text-[10px] text-gray-400">Must be at least {minAge} years old.</p>
         </div>
         <SelectField label="Height" name="height" options={HEIGHT_OPTIONS} value={data.height || ""} onChange={onChange} error={fieldErrors?.height} />
         <SelectField label="Weight" name="weight" options={WEIGHT_OPTIONS} value={data.weight || ""} onChange={onChange} optional />
@@ -670,6 +678,9 @@ export default function RegisterPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const [masterData, setMasterData] = useState<MasterData | null>(null);
+  useEffect(() => { setMasterData(loadMasterData()); }, []);
+  const minAge = masterData?.ageRange?.min ?? 18;
 
   // Redirect already-logged-in users
   useEffect(() => {
@@ -769,8 +780,8 @@ export default function RegisterPage() {
       if (!formData.gender) errs.gender = 'Please select a gender.';
       if (!formData.birthDate) {
         errs.birthDate = 'Birth date is required.';
-      } else if (!isAtLeast16(formData.birthDate)) {
-        errs.birthDate = 'You must be at least 16 years old to register.';
+      } else if (!isAtLeastMinAge(formData.birthDate, minAge)) {
+        errs.birthDate = `You must be at least ${minAge} years old to register.`;
       }
       if (!formData.height) errs.height = 'Please select a height.';
       if (!formData.appearance) errs.appearance = 'Please select an appearance.';
@@ -1069,7 +1080,7 @@ export default function RegisterPage() {
           <div className="flex-1 px-5 py-6 md:px-8 md:py-8">
             <div className="flex-1">
               {currentStep === 1 && <Step2 data={formData} onChange={handleChange} onPhoneChange={handlePhoneChange} fieldErrors={fieldErrors} />}
-              {currentStep === 2 && <Step1 data={formData} onChange={handleChange} fieldErrors={fieldErrors} />}
+              {currentStep === 2 && <Step1 data={formData} onChange={handleChange} fieldErrors={fieldErrors} minAge={minAge} />}
               {currentStep === 3 && <Step3 data={formData} onChange={handleChange} onLocationChange={handleLocationChange} fieldErrors={fieldErrors} />}
               {currentStep === 4 && <Step4 data={formData} onChange={handleChange} onFamilyLocationChange={handleFamilyLocationChange} fieldErrors={fieldErrors} />}
               {currentStep === 5 && <Step5 data={formData} onChange={handleChange} lookingFor={lookingFor} setLookingFor={setLookingFor} agreedTerms={agreedTerms} setAgreedTerms={setAgreedTerms} countryPrefSelected={countryPrefSelected} setCountryPrefSelected={setCountryPrefSelected} />}
