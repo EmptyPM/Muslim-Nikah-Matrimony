@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { profileApi } from '@/services/api';
 import { CascadeLocation } from '@/components/ui/CascadeLocation';
@@ -149,6 +149,109 @@ function DobPicker({ day, month, year, onChange, error, minAge = 18 }: {
   );
 }
 
+/* ── Multi-Country Select ─────────────────────────────────────────────────── */
+function MultiCountrySelect({
+  selected, onChange, countries,
+}: {
+  selected: string[];
+  onChange: (v: string[]) => void;
+  countries: string[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const toggle = (c: string) =>
+    onChange(selected.includes(c) ? selected.filter(s => s !== c) : [...selected, c]);
+
+  const filtered = countries.filter(
+    c => c.toLowerCase().includes(search.toLowerCase()) && !selected.includes(c)
+  );
+
+  return (
+    <div ref={ref}>
+      <label className="block text-xs font-semibold text-gray-500 mb-1.5">
+        Looking Country <span className="text-gray-400 font-normal">(optional, select multiple)</span>
+      </label>
+
+      {/* Pill tags */}
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {selected.map(c => (
+            <span key={c} className="inline-flex items-center gap-1 bg-[#1C3B35]/10 text-[#1C3B35] text-xs font-semibold px-2.5 py-1 rounded-full">
+              {c}
+              <button type="button" onClick={() => toggle(c)}
+                className="ml-0.5 text-[#1C3B35]/60 hover:text-[#1C3B35] text-sm leading-none transition">
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Trigger button */}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => { setOpen(o => !o); setSearch(''); }}
+          className={`w-full flex items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm bg-gray-50 focus:bg-white hover:border-[#1C3B35]/40 focus:outline-none focus:ring-2 focus:ring-[#1C3B35]/20 focus:border-[#1C3B35] transition ${open ? 'border-[#1C3B35] bg-white' : 'border-gray-200'}`}
+        >
+          <span className={selected.length === 0 ? 'text-gray-400' : 'text-gray-700 font-medium'}>
+            {selected.length === 0 ? 'Any country' : `${selected.length} selected`}
+          </span>
+          <svg className={`w-4 h-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
+            fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+
+        {open && (
+          <div className="absolute z-[200] mt-1 w-full bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+            <div className="px-3 pt-2.5 pb-1.5 border-b border-gray-100">
+              <input type="text" autoFocus placeholder="Search country…"
+                value={search} onChange={e => setSearch(e.target.value)}
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#1C3B35]/20 focus:border-[#1C3B35] transition" />
+            </div>
+            <ul className="max-h-52 overflow-y-auto py-1">
+              {filtered.length === 0
+                ? <li className="px-4 py-2.5 text-xs text-gray-400 italic">No countries found</li>
+                : filtered.map(c => (
+                  <li key={c}>
+                    <button type="button" onClick={() => toggle(c)}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#1C3B35]/5 flex items-center gap-2 transition">
+                      <span className="w-4 h-4 rounded border border-gray-300 bg-white flex-shrink-0" />
+                      {c}
+                    </button>
+                  </li>
+                ))
+              }
+            </ul>
+            {selected.length > 0 && (
+              <div className="border-t border-gray-100 py-1">
+                {selected.map(c => (
+                  <button key={c} type="button" onClick={() => toggle(c)}
+                    className="w-full text-left px-4 py-2 text-sm text-[#1C3B35] font-medium hover:bg-[#1C3B35]/5 flex items-center gap-2 transition">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    {c}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Step icons ────────────────────────────────────────────────────────────────
 const STEP_ICONS = [
   <svg key="p" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>,
@@ -229,6 +332,7 @@ export default function CreateProfilePage() {
     about: '', expectations: '',
   });
   const [saving, setSaving] = useState(false);
+  const [countryPrefList, setCountryPrefList] = useState<string[]>([]);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [apiError, setApiError] = useState('');
 
@@ -448,8 +552,8 @@ export default function CreateProfilePage() {
         </div>
 
         {/* Form card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="bg-[#F0F4F2] border-b border-gray-100 px-4 sm:px-6 py-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+          <div className="bg-[#F0F4F2] border-b border-gray-100 px-4 sm:px-6 py-4 rounded-t-2xl">
             <h2 className="font-bold text-[#1C3B35] text-base">{STEPS[step]}</h2>
             <p className="text-xs text-gray-500 mt-0.5">{stepDesc[step]}</p>
           </div>
@@ -593,17 +697,16 @@ export default function CreateProfilePage() {
                   <span>We've auto-generated your bio and expectations based on your details. Feel free to edit them.</span>
                 </div>
 
-                {/* Looking Country */}
-                <Select
-                  label="Looking Country"
-                  name="countryPreference"
-                  value={form.countryPreference}
-                  onChange={handleField}
-                  options={['Any Country', ...(masterData?.countries.map(c => c.name) ?? ['Sri Lanka','United Kingdom','Australia','Canada','UAE','Saudi Arabia','Qatar','USA','Malaysia','Other'])]}
-                  placeholder="Any country"
-                  optional
+                {/* Looking Country — multi-select */}
+                <MultiCountrySelect
+                  selected={countryPrefList}
+                  onChange={(list) => {
+                    setCountryPrefList(list);
+                    setForm((f: any) => ({ ...f, countryPreference: list.join(',') }));
+                  }}
+                  countries={masterData?.countries.map(c => c.name).sort() ?? []}
                 />
-                <p className="text-[11px] text-gray-400 -mt-2">Only profiles from this country will appear in your browse results.</p>
+                <p className="text-[11px] text-gray-400 -mt-2">Only profiles from selected countries will appear in your browse results.</p>
 
                 {/* Additional Information */}
                 <Textarea

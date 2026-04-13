@@ -141,6 +141,15 @@ export default function ProfileDetailPage() {
 
             {/* Action buttons */}
             <div className="flex gap-2 flex-shrink-0">
+              <Link
+                href={`/dashboard/profiles/${params?.id}/edit`}
+                className="flex items-center gap-1.5 bg-white text-[#1C3B35] text-xs font-semibold px-3.5 py-2 rounded-xl transition hover:bg-white/90"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit Profile
+              </Link>
               <button
                 onClick={() => router.back()}
                 className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition"
@@ -233,17 +242,16 @@ export default function ProfileDetailPage() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
             <polyline points="15 18 9 12 15 6" />
           </svg>
-          Back to My Profiles
+          Back
         </button>
         <Link
-          href={`/dashboard/profiles`}
+          href={`/dashboard/profiles/${params?.id}/edit`}
           className="flex-1 bg-[#1C3B35] text-white text-sm font-semibold py-3 rounded-2xl hover:bg-[#15302a] transition text-center flex items-center justify-center gap-2"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
-            <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
-          All Profiles
+          Edit Profile
         </Link>
       </div>
 
