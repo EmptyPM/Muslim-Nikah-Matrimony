@@ -234,7 +234,7 @@ export default function ParentDashboard() {
                       <td className="px-6 py-4 font-medium text-gray-800">{p.name}</td>
                       <td className="px-6 py-4 text-gray-500 capitalize">{p.gender?.toLowerCase() ?? '—'}</td>
                       <td className="px-6 py-4">
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusBadge(p.status)}`}>
+                        <span className={`inline-flex items-center whitespace-nowrap text-[11px] sm:text-xs leading-none font-semibold px-2 sm:px-2.5 py-1 rounded-full ${statusBadge(p.status)}`}>
                           {p.status.replace('_', ' ')}
                         </span>
                       </td>
@@ -301,7 +301,7 @@ export default function ParentDashboard() {
                     <td className="px-6 py-3.5 font-mono text-xs text-gray-400 select-all">{pay.id.slice(0, 14)}…</td>
                     <td className="px-6 py-3.5 font-semibold text-gray-800">{fmt(pay.amount)}</td>
                     <td className="px-6 py-3.5">
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${pay.method === 'BANK_TRANSFER' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'}`}>
+                      <span className={`inline-flex items-center whitespace-nowrap text-[11px] sm:text-xs leading-none px-2 sm:px-2.5 py-1 rounded-full font-medium ${pay.method === 'BANK_TRANSFER' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'}`}>
                         {pay.method === 'BANK_TRANSFER' ? '🏦 Bank' : '💳 Online'}
                       </span>
                     </td>

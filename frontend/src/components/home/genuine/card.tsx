@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -334,8 +334,8 @@ const InfoRow = ({
     value: string | number;
 }) => (
     <div className="flex justify-between items-start py-[5px] gap-2">
-        <span className="text-[12px] md:text-[13px] lg:text-[14px] text-[#010806A1]/65 font-poppins flex-shrink-0">{label}</span>
-        <span className="text-[12px] md:text-[13px] lg:text-[14px] font-medium text-[#010806CC]/80 font-poppins text-right break-words min-w-0">
+        <span className="text-[14px] md:text-[15px] lg:text-[16px] xl:text-[16px] text-[#010806A1]/65 font-poppins flex-shrink-0">{label}</span>
+        <span className="text-[14px] md:text-[15px] lg:text-[16px] xl:text-[16px] font-medium text-[#010806CC]/80 font-poppins text-right break-words min-w-0">
             {value}
         </span>
     </div>
@@ -391,7 +391,7 @@ const GenuineProfileCard = ({
                 {/* Member ID + badge row */}
                 <div className="flex items-center justify-between mb-2">
                     {memberId ? (
-                        <span className={`inline-flex items-center gap-1 text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border tracking-widest ${
+                        <span className={`inline-flex items-center gap-1 text-[10px] md:text-[10px] lg:text-[10px] xl:text-[11px] font-mono font-bold px-2 py-0.5 rounded-full border tracking-widest ${
                             isVip
                                 ? 'bg-[#F5C518]/15 text-[#9A6E00] border-[#DB9D30]/40'
                                 : 'bg-[#1C3B35]/8 text-[#1C3B35] border-[#1C3B35]/20'
@@ -417,7 +417,7 @@ const GenuineProfileCard = ({
                         )}
                         {createdByMeta && (
                             <span
-                                className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-semibold font-poppins"
+                                className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] lg:text-[10px] xl:text-[11px] font-semibold font-poppins"
                                 style={{
                                     background: createdByMeta.bg,
                                     color: createdByMeta.color,
@@ -435,7 +435,7 @@ const GenuineProfileCard = ({
                     <div className="absolute inset-0 w-full h-full">
                         <DecorativeBorder />
                     </div>
-                    <div className="absolute inset-[25px] rounded-full overflow-hidden bg-gray-100">
+                    <div className="absolute inset-[15px] md:inset-[20px] lg:inset-[25px] rounded-full overflow-hidden bg-gray-100">
                         {profileImage ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
@@ -477,7 +477,7 @@ const GenuineProfileCard = ({
                 {!hideFooter && (
                     <>
                         <div className="border-t border-dashed border-gray-700 mt-2 mb-3" />
-                        <p className="text-center text-[11px] lg:text-[13px] xl:text-[15px] 2xl:text-[17px] text-[#010806A1]/80 font-poppins mb-3">
+                        <p className="text-center text-[13px] lg:text-[14px] xl:text-[15px] 2xl:text-[17px] text-[#010806A1]/80 font-poppins mb-3">
                             Joined {smartJoinedTime(joinedMs)}
                         </p>
                         <div className="flex gap-2 w-full">

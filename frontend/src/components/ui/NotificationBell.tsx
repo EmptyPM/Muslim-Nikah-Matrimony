@@ -141,7 +141,7 @@ export default function NotificationBell() {
       {open && (
         <div
           id="notification-dropdown"
-          className="absolute right-0 top-full mt-2 w-80 sm:w-96 z-[999] rounded-2xl bg-white shadow-2xl shadow-black/10 ring-1 ring-black/5 overflow-hidden animate-in"
+          className="absolute left-1/2 right-auto top-full mt-2 w-[calc(100vw-1rem)] max-w-[22rem] -translate-x-1/2 sm:left-auto sm:right-0 sm:w-96 sm:max-w-none sm:translate-x-0 z-[999] rounded-2xl bg-white shadow-2xl shadow-black/10 ring-1 ring-black/5 overflow-hidden animate-in"
           style={{ animationDuration: '150ms' }}
         >
           {/* Header */}

@@ -247,16 +247,16 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <Link
             href="/"
             onClick={onNavigate}
-            className="flex w-full items-center gap-4 rounded-2xl py-1 text-left transition-colors outline-none hover:opacity-90 focus-visible:ring-2 focus-visible:ring-black/15 focus-visible:ring-offset-2"
+            className="flex w-full items-center gap-3 rounded-2xl py-1 text-left transition-colors outline-none hover:opacity-90 focus-visible:ring-2 focus-visible:ring-black/15 focus-visible:ring-offset-2"
           >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EAF2EE] text-[#1C3B35]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-400">
               <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" aria-hidden>
                 <circle cx="12" cy="12" r="10" />
                 <line x1="2" y1="12" x2="22" y2="12" />
                 <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
               </svg>
             </span>
-            <span className="text-lg font-medium text-[#1C3B35]">Go to Website</span>
+            <span className="text-lg font-medium text-[#7B7B7B]">Go to Website</span>
           </Link>
 
           <button
@@ -303,7 +303,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      <div className="flex min-h-screen min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-visible lg:overflow-hidden">
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-100 bg-white px-4 py-3.5 sm:px-6 xl:px-8 lg:rounded-[40px]">
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <button
