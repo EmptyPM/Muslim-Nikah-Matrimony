@@ -51,7 +51,7 @@ const ProfilesHeader = () => {
           className="object-cover object-center"
         />
       </div>
-      <div className="relative z-10 containerpadding container mx-auto flex min-h-[500px] sm:min-h-[600px] md:min-h-[500px] lg:min-h-[600px] flex-col items-center justify-center gap-5 text-center margin-y">
+      <div className="relative z-10 containerpadding container mx-auto flex min-h-[700px] sm:min-h-[600px] md:min-h-[500px] lg:min-h-[600px] flex-col items-center justify-center gap-5 text-center margin-y">
         <p className="font-andada-pro title-sub-top font-light text-white">
           Follow a trusted path built on faith, privacy, and family values.
         </p>

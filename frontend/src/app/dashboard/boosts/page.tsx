@@ -192,10 +192,10 @@ export default function BoostsPage() {
       ) : (
         <>
           {/* Tab switcher */}
-          <div className="inline-flex bg-gray-100 rounded-xl p-1 gap-1">
+          <div className="inline-flex w-full sm:w-auto bg-gray-100 rounded-xl p-1 gap-1">
             {(['active', 'history'] as const).map(t => (
               <button key={t} onClick={() => setTab(t)}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                className={`flex-1 sm:flex-none min-w-0 px-2.5 sm:px-4 py-2 rounded-lg text-[11px] sm:text-sm font-semibold transition-all text-center leading-tight whitespace-normal sm:whitespace-nowrap ${
                   tab === t ? 'bg-white text-[#8B5E00] shadow-sm' : 'text-gray-500 hover:text-gray-700'
                 }`}>
                 {t === 'active' ? `⚡ Running Ads (${activeBoosts.length})` : `📋 Payment History (${payments.length})`}

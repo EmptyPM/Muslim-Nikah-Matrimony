@@ -594,7 +594,7 @@ export default function ChatPage() {
               </div>
 
               {/* Input */}
-              <div className="border-t border-gray-100 bg-white">
+              <div className="border-t border-gray-100 bg-white overflow-x-hidden">
                 {/* Toast error banner */}
                 {chatError && (
                   <div className="mx-4 mt-3 flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
@@ -619,7 +619,7 @@ export default function ChatPage() {
                     <span className="text-xs text-gray-400">Image ready to send</span>
                   </div>
                 )}
-                <div className="px-4 py-3 flex gap-2 items-end">
+                <div className="px-4 py-3 flex gap-2 items-end min-w-0">
                   {/* Hidden file input */}
                   <input
                     ref={fileInputRef}
@@ -646,7 +646,7 @@ export default function ChatPage() {
                     onChange={e => handleTyping(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())}
                     placeholder={`Message ${selectedConvName}…`}
-                    className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 outline-none focus:border-[#1C3B35] transition bg-gray-50 focus:bg-white"
+                    className="flex-1 min-w-0 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 outline-none focus:border-[#1C3B35] transition bg-gray-50 focus:bg-white"
                   />
                   <button onClick={send} disabled={sending || (!newMsg.trim() && !imageFile)}
                     className="bg-[#1C3B35] text-white p-2.5 rounded-xl hover:bg-[#15302a] transition disabled:opacity-50 flex-shrink-0">
