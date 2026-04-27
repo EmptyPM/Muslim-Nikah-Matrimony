@@ -151,7 +151,7 @@ function ProfileModal({
           </p>
         </div>
 
-        <div className="px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <div className="px-6 py-4 border-t border-gray-100 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
           <button onClick={onClose}
             className="w-full sm:flex-1 border border-gray-200 text-gray-600 text-sm font-semibold py-2.5 rounded-xl hover:bg-gray-50 transition">
             Cancel

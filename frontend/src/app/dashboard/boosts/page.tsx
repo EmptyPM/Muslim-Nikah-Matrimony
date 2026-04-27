@@ -176,7 +176,7 @@ export default function BoostsPage() {
           </p>
         </div>
         <Link href="/dashboard/profiles"
-          className="inline-flex items-center gap-2 bg-[#DB9D30] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-[#c98b26] transition">
+          className="self-start sm:self-auto inline-flex items-center gap-2 bg-[#DB9D30] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-[#c98b26] transition">
           <span>⚡</span> Boost a Profile
         </Link>
       </div>

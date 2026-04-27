@@ -16,8 +16,8 @@ const CATEGORY_STYLE: Record<string, string> = {
 };
 
 const STARTER_TEMPLATES = [
-  { name: 'Welcome Message', category: 'WELCOME', message: 'Assalamu Alaikum! Welcome to Muslim Nikah Matrimony. Your journey to find your life partner starts here. Visit our platform to complete your profile.' },
-  { name: 'Package Expiry Reminder', category: 'REMINDER', message: 'Dear member, your Muslim Nikah Matrimony subscription is expiring soon. Renew now to keep your profile active and visible to potential matches.' },
+  { name: 'Welcome Message', category: 'WELCOME', message: 'Assalamu Alaikum! Welcome to Muslim Nikah. Your journey to find your life partner starts here. Visit our platform to complete your profile.' },
+  { name: 'Package Expiry Reminder', category: 'REMINDER', message: 'Dear member, your Muslim Nikah  subscription is expiring soon. Renew now to keep your profile active and visible to potential matches.' },
   { name: 'Profile Completion Reminder', category: 'REMINDER', message: 'Your Muslim Nikah profile is incomplete. A complete profile gets 3x more views! Login and complete your profile today.' },
   { name: 'Special Promotion', category: 'PROMOTIONAL', message: 'Exclusive offer for Muslim Nikah members! Get 20% off on your next subscription renewal. Limited time only. Login to your account to avail.' },
 ];
