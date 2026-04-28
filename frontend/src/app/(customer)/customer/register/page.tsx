@@ -420,7 +420,7 @@ export default function RegisterPage() {
       const gender = formData.gender?.toUpperCase() === "FEMALE" ? "FEMALE" : "MALE";
       const dateOfBirth = formData.birthDate || new Date(Date.now() - 25 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-      await fetch(`${API_URL}/profile/create`, {
+      const profileRes = await fetch(`${API_URL}/profile/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -431,9 +431,15 @@ export default function RegisterPage() {
           country: formData.country || undefined,
           education: formData.education || undefined,
           occupation: formData.occupation || undefined,
-          about: formData.about || undefined,
+          aboutUs: formData.about || undefined,
         }),
       });
+
+      const profileData = await profileRes.json().catch(() => null);
+      if (!profileRes.ok || !profileData?.success) {
+        setError(profileData?.message ?? "Account created, but profile creation failed. Please try again.");
+        return;
+      }
 
       // Redirect to plan selection
       router.push("/select-plan");

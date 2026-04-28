@@ -1091,71 +1091,69 @@ export default function RegisterPage() {
       localStorage.setItem("mn_token", res.token);
       localStorage.setItem("mn_user", JSON.stringify(res.user));
 
-      // Step 2: Auto-create a profile using the details already filled in the form
-      // (so the user never sees the "Create Your Profile" popup on the next page)
+      // Step 2: Auto-create a profile using the details already filled in the form.
+      // Important: keep payload strictly aligned with backend CreateChildProfileDto
+      // so validation doesn't reject it and leave user with "No profile yet".
+      const fullName = [formData.firstName, formData.lastName].filter(Boolean).join(" ").trim();
+      const genderMap: Record<string, string> = { Male: "MALE", Female: "FEMALE" };
+
+      // Height: DTO expects an integer in cm. The form stores strings like "5'6"".
+      const heightNum = formData.height ? (HEIGHT_TO_CM[formData.height] ?? undefined) : undefined;
+
+      // If no name provided, use member ID (from register response) or email prefix.
+      const profileName = fullName || res.user?.memberId || formData.email.split('@')[0];
+
+      const profilePayload: Record<string, any> = {
+        // Required
+        name: profileName,
+        gender: genderMap[formData.gender] ?? 'MALE',
+        dateOfBirth: formData.birthDate || new Date(Date.now() - 20 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+
+        // Personal details
+        ...(formData.createdBy && { createdBy: formData.createdBy }),
+        ...(heightNum !== undefined && { height: heightNum }),
+        ...(formData.weight && { weight: parseInt(formData.weight, 10) }),
+        ...(formData.appearance && { appearance: formData.appearance }),
+        ...(formData.complexion && { complexion: formData.complexion }),
+        ...(formData.ethnicity && { ethnicity: formData.ethnicity }),
+        ...(formData.dressCode && { dressCode: formData.dressCode }),
+        ...(formData.familyStatus && { familyStatus: formData.familyStatus }),
+        ...(formData.civilStatus && { civilStatus: formData.civilStatus }),
+
+        // Location & education (DTO-supported keys only)
+        ...(formData.country && { country: formData.country }),
+        ...(formData.city && { city: formData.city }),
+        ...(formData.residencyStatus && { residencyStatus: formData.residencyStatus }),
+        ...(formData.education && { education: formData.education }),
+        ...(formData.fieldOfStudy && { fieldOfStudy: formData.fieldOfStudy }),
+        ...(formData.occupation && { occupation: formData.occupation }),
+        ...(formData.profession && { profession: formData.profession }),
+
+        // Family details
+        ...(formData.fatherOccupation && { fatherOccupation: formData.fatherOccupation }),
+        ...(formData.motherOccupation && { motherOccupation: formData.motherOccupation }),
+        ...((formData.brothers || formData.sisters) && {
+          siblings: parseInt(formData.brothers || '0', 10) + parseInt(formData.sisters || '0', 10),
+        }),
+
+        // Additional details
+        ...(formData.about && { aboutUs: formData.about }),
+        ...(formData.expectations && { expectations: formData.expectations }),
+        ...(countryPrefSelected.length > 0 && { countryPreference: countryPrefSelected.join(',') }),
+        ...(minAgePref && { minAgePreference: parseInt(minAgePref, 10) }),
+        ...(maxAgePref && { maxAgePreference: parseInt(maxAgePref, 10) }),
+
+        // Contact from account details
+        ...(formData.phone && { phone: formData.phone }),
+      };
+
       try {
-        const fullName = [formData.firstName, formData.lastName].filter(Boolean).join(" ").trim();
-        const genderMap: Record<string, string> = { Male: "MALE", Female: "FEMALE" };
-
-        // Height: DTO expects an integer in cm. The form stores strings like "5'6""
-        const heightNum = formData.height ? (HEIGHT_TO_CM[formData.height] ?? undefined) : undefined;
-
-        // If no name provided, use the member ID (returned after registration) or email prefix
-        const profileName = fullName || res.user?.memberId || formData.email.split('@')[0];
-
-        // Build profile payload — include every collected field
-        const profilePayload: Record<string, any> = {
-          // Required
-          name: profileName,
-          gender: genderMap[formData.gender] ?? 'MALE',
-          dateOfBirth: formData.birthDate || new Date(Date.now() - 20 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-
-          // Step 2 — Personal Details
-          ...(formData.createdBy && { createdBy: formData.createdBy }),
-          ...(heightNum !== undefined && { height: heightNum }),
-          ...(formData.weight && { weight: parseInt(formData.weight) }),
-          ...(formData.appearance && { appearance: formData.appearance }),
-          ...(formData.complexion && { complexion: formData.complexion }),
-          ...(formData.ethnicity && { ethnicity: formData.ethnicity }),
-          ...(formData.dressCode && { dressCode: formData.dressCode }),
-          ...(formData.familyStatus && { familyStatus: formData.familyStatus }),
-          ...(formData.civilStatus && { civilStatus: formData.civilStatus }),
-
-          // Step 3 — Location & Education
-          ...(formData.country && { country: formData.country }),
-          ...(formData.city && { city: formData.city }),
-          ...(formData.residentCountry && { residentCountry: formData.residentCountry }),
-          ...(formData.residentCity && { residentCity: formData.residentCity }),
-          ...(formData.residencyStatus && { residencyStatus: formData.residencyStatus }),
-          ...(formData.education && { education: formData.education }),
-          ...(formData.fieldOfStudy && { fieldOfStudy: formData.fieldOfStudy }),
-          ...(formData.occupation && { occupation: formData.occupation }),
-          ...(formData.profession && { profession: formData.profession }),
-
-          // Step 4 — Family Details
-          ...(formData.fatherOccupation && { fatherOccupation: formData.fatherOccupation }),
-          ...(formData.motherOccupation && { motherOccupation: formData.motherOccupation }),
-          ...((formData.brothers || formData.sisters) && {
-            siblings: (parseInt(formData.brothers || '0') + parseInt(formData.sisters || '0')),
-          }),
-
-          // Step 5 — Additional Details
-          ...(formData.about && { aboutUs: formData.about }),
-          ...(formData.expectations && { expectations: formData.expectations }),
-          ...(formData.extraQualification && { extraQualification: formData.extraQualification }),
-          ...(countryPrefSelected.length > 0 && { countryPreference: countryPrefSelected.join(',') }),
-          ...(minAgePref && { minAgePreference: parseInt(minAgePref) }),
-          ...(maxAgePref && { maxAgePreference: parseInt(maxAgePref) }),
-
-          // Contact from account details
-          ...(formData.phone && { phone: formData.phone }),
-        };
-
         await profileApi.create(profilePayload);
       } catch (profileErr: any) {
-        // Log so we can see exactly what went wrong (visible in browser console)
-        console.error("[Register] Auto-profile creation failed:", profileErr?.message ?? profileErr);
-        // Still continue to select-plan — the modal is the fallback
+        const msg = profileErr?.message ?? 'Failed to create profile';
+        console.error("[Register] Auto-profile creation failed:", msg);
+        setError(`Account created, but profile creation failed: ${msg}. Please try again.`);
+        return;
       }
 
       // Redirect to plan selection
