@@ -612,7 +612,7 @@ export default function ProfilesPage() {
                           const symbol       = hasUsd ? '$' : 'Rs.';
                           const payAmount    = hasUsd ? (plan.usdPrice ?? plan.price) : plan.price;
                           return (
-                            <div key={plan.id ?? plan.durationDays} className={`relative rounded-xl border-2 p-2 sm:p-3 text-center cursor-pointer transition-all ${
+                            <div key={plan.id ?? plan.durationDays} className={`relative rounded-xl border-2 p-2 sm:p-3 text-center cursor-pointer transition-all flex flex-col h-full ${
                               popular ? 'border-[#DB9D30] bg-[#DB9D30]/8 shadow-sm' : 'border-[#DB9D30]/25 bg-white hover:border-[#DB9D30]/60'
                             }`}>
                               {popular && (
@@ -626,16 +626,18 @@ export default function ProfilesPage() {
                                 {symbol} {Number(displayPrice).toFixed(2)}
                               </p>
                               {/* Strikethrough original */}
-                              {displayOrig != null && displayOrig > displayPrice && (
-                                <p className="text-[9px] text-[#A07830]/60 line-through leading-tight">
+                              {displayOrig != null && displayOrig > displayPrice ? (
+                                <p className="text-[9px] text-[#A07830]/60 line-through leading-tight min-h-[12px]">
                                   {symbol} {Number(displayOrig).toFixed(2)}
                                 </p>
+                              ) : (
+                                <div className="min-h-[12px]" />
                               )}
-                              <p className="hidden sm:block text-[9px] text-[#A07830] font-poppins mt-0.5 leading-tight">{plan.description || `Top listing for ${plan.durationDays} days`}</p>
+                              <p className="hidden sm:block text-[9px] text-[#A07830] font-poppins mt-0.5 leading-tight min-h-[24px]">{plan.description || `Top listing for ${plan.durationDays} days`}</p>
                               <button
                                 onClick={() => goToBoostPayment(p.id, p.name ?? '', p.memberId ?? '', plan, boostCurrency)}
                                 disabled={boost[p.id]?.boosting}
-                                className={`mt-1.5 sm:mt-2 w-full py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-[10px] font-bold font-poppins transition-all disabled:opacity-50 ${
+                                className={`mt-auto pt-1.5 sm:pt-2 w-full h-8 sm:h-9 rounded-lg text-[9px] sm:text-[10px] font-bold font-poppins transition-all disabled:opacity-50 ${
                                   popular
                                     ? 'bg-[#DB9D30] text-white hover:bg-[#c98b26] shadow-sm'
                                     : 'bg-[#DB9D30]/15 text-[#8B5E00] hover:bg-[#DB9D30]/30 border border-[#DB9D30]/30'
