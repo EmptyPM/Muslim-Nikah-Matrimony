@@ -35,7 +35,8 @@ type FormState = {
   motherCountry: string;
   motherCity: string;
   motherOccupation: string;
-  siblings: string;
+  brothers: string;
+  sisters: string;
   countryPreference: string;
   minAgePreference: string;
   maxAgePreference: string;
@@ -52,11 +53,17 @@ const EMPTY: FormState = {
   education: '', fieldOfStudy: '', occupation: '', profession: '',
   fatherEthnicity: '', fatherCountry: '', fatherCity: '', fatherOccupation: '',
   motherEthnicity: '', motherCountry: '', motherCity: '', motherOccupation: '',
-  siblings: '', countryPreference: '', minAgePreference: '', maxAgePreference: '',
+  brothers: '', sisters: '', countryPreference: '', minAgePreference: '', maxAgePreference: '',
   aboutUs: '', expectations: '', extraQualification: '',
 };
 
 /* ── Field component ────────────────────────────────────────────── */
+const ChevronDown = () => (
+  <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
 function Field({
   label, name, value, onChange, type = 'text', options, disabled, rows,
 }: {
@@ -78,16 +85,19 @@ function Field({
         {label}
       </label>
       {options ? (
-        <select
-          name={name}
-          value={value}
-          disabled={disabled}
-          onChange={e => onChange(name, e.target.value)}
-          className={`${base} appearance-none cursor-pointer`}
-        >
-          <option value="">— Select —</option>
-          {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
+        <div className="relative">
+          <select
+            name={name}
+            value={value}
+            disabled={disabled}
+            onChange={e => onChange(name, e.target.value)}
+            className={`${base} appearance-none cursor-pointer pr-9`}
+          >
+            <option value="">— Select —</option>
+            {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+          <ChevronDown />
+        </div>
       ) : rows ? (
         <textarea
           name={name}
@@ -290,8 +300,10 @@ const DRESS_CODE_OPTS = [
   { value: 'Formal', label: 'Formal' },
 ];
 const FAMILY_STATUS_OPTS = [
-  { value: 'Middle Class', label: 'Middle Class' },
   { value: 'Upper Class', label: 'Upper Class' },
+  { value: 'Upper Middle Class', label: 'Upper Middle Class' },
+  { value: 'Middle Class', label: 'Middle Class' },
+  { value: 'Lower Middle Class', label: 'Lower Middle Class' },
   { value: 'Lower Class', label: 'Lower Class' },
   { value: 'Rich', label: 'Rich' },
 ];
@@ -301,14 +313,6 @@ const RESIDENCY_OPTS = [
   { value: 'Visa Holder', label: 'Visa Holder' },
   { value: 'Student Visa', label: 'Student Visa' },
   { value: 'Work Visa', label: 'Work Visa' },
-  { value: 'Other', label: 'Other' },
-];
-const EDUCATION_OPTS = [
-  { value: 'High School', label: 'High School' },
-  { value: "Bachelor's", label: "Bachelor's" },
-  { value: "Master's", label: "Master's" },
-  { value: 'PhD', label: 'PhD' },
-  { value: 'Diploma', label: 'Diploma' },
   { value: 'Other', label: 'Other' },
 ];
 
@@ -322,16 +326,33 @@ export default function EditProfilePage() {
   const [form, setForm] = useState<FormState>(EMPTY);
   const [countryPrefList, setCountryPrefList] = useState<string[]>([]);
   const [masterCountries, setMasterCountries] = useState<string[]>([]);
+  const [masterData, setMasterData] = useState<import('@/app/admin/master-file/data').MasterData | null>(null);
+  const [educationOpts, setEducationOpts] = useState<{ value: string; label: string }[]>([]);
+  const [occupationOpts, setOccupationOpts] = useState<{ value: string; label: string }[]>([]);
+  const [dressCodeOpts, setDressCodeOpts] = useState<{ value: string; label: string }[]>([]);
+  const [ethnicityOpts, setEthnicityOpts] = useState<{ value: string; label: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  // Load master country list
+  // Load master data (countries, education, occupation, dressCode, ethnicity)
   useEffect(() => {
     const md = loadMasterData();
+    setMasterData(md);
     setMasterCountries(md.countries.map(c => c.name).sort());
+    setEducationOpts(md.education.map(e => ({ value: e.value, label: e.value })));
+    setOccupationOpts(md.occupation.map(o => ({ value: o.value, label: o.value })));
+    setDressCodeOpts(md.dressCode.map(d => ({ value: d.value, label: d.value })));
+    setEthnicityOpts(md.ethnicity.map(e => ({ value: e.value, label: e.value })));
   }, []);
+
+  // Helper: get city options for a given country name
+  const citiesFor = (countryName: string) => {
+    if (!masterData || !countryName) return [];
+    const found = masterData.countries.find(c => c.name === countryName);
+    return (found?.cities ?? []).map(ci => ({ value: ci.name, label: ci.name }));
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -367,7 +388,8 @@ export default function EditProfilePage() {
           motherCountry: p.motherCountry ?? '',
           motherCity: p.motherCity ?? '',
           motherOccupation: p.motherOccupation ?? '',
-          siblings: p.siblings != null ? String(p.siblings) : '',
+          brothers: p.brothers != null ? String(p.brothers) : '',
+          sisters: p.sisters != null ? String(p.sisters) : '',
           countryPreference: p.countryPreference ?? '',
           minAgePreference: p.minAgePreference != null ? String(p.minAgePreference) : '',
           maxAgePreference: p.maxAgePreference != null ? String(p.maxAgePreference) : '',
@@ -407,7 +429,14 @@ export default function EditProfilePage() {
       // Convert numeric fields
       if (payload.height) payload.height = Number(payload.height);
       if (payload.weight) payload.weight = Number(payload.weight);
-      if (payload.siblings) payload.siblings = Number(payload.siblings);
+      if (payload.brothers !== '' && payload.brothers != null) payload.brothers = Number(payload.brothers);
+      else delete payload.brothers;
+      if (payload.sisters !== '' && payload.sisters != null) payload.sisters = Number(payload.sisters);
+      else delete payload.sisters;
+      // Compute total siblings from brothers + sisters
+      const b = payload.brothers ?? 0;
+      const s = payload.sisters ?? 0;
+      if (payload.brothers != null || payload.sisters != null) payload.siblings = b + s;
 
       // Fields that must always be sent (even as empty string) so backend can
       // detect clears and apply them correctly.
@@ -515,36 +544,53 @@ export default function EditProfilePage() {
         <Field label="Weight (kg)" name="weight" value={form.weight} onChange={set} type="number" />
         <Field label="Complexion" name="complexion" value={form.complexion} onChange={set} options={COMPLEXION_OPTS} />
         <Field label="Appearance" name="appearance" value={form.appearance} onChange={set} options={APPEARANCE_OPTS} />
-        <Field label="Dress Code" name="dressCode" value={form.dressCode} onChange={set} options={DRESS_CODE_OPTS} />
-        <Field label="Ethnicity" name="ethnicity" value={form.ethnicity} onChange={set} />
+        <Field label="Dress Code" name="dressCode" value={form.dressCode} onChange={set} options={dressCodeOpts.length ? dressCodeOpts : DRESS_CODE_OPTS} />
+        <Field label="Ethnicity" name="ethnicity" value={form.ethnicity} onChange={set} options={ethnicityOpts.length ? ethnicityOpts : undefined} />
         <Field label="Civil Status" name="civilStatus" value={form.civilStatus} onChange={set} options={CIVIL_STATUS_OPTS} />
         <Field label="Family Status" name="familyStatus" value={form.familyStatus} onChange={set} options={FAMILY_STATUS_OPTS} />
       </SectionCard>
 
       {/* ── Location & Education ──────────────────────────────────────── */}
       <SectionCard title="Location & Education">
-        <Field label="Country" name="country" value={form.country} onChange={set} />
-        <Field label="City" name="city" value={form.city} onChange={set} />
-        <Field label="Resident Country" name="residentCountry" value={form.residentCountry} onChange={set} />
-        <Field label="Resident City" name="residentCity" value={form.residentCity} onChange={set} />
+        <Field label="Country" name="country" value={form.country}
+          onChange={(k, v) => { set(k, v); set('city', ''); }}
+          options={masterCountries.length ? masterCountries.map(c => ({ value: c, label: c })) : undefined} />
+        <Field label="City" name="city" value={form.city} onChange={set}
+          options={citiesFor(form.country).length ? citiesFor(form.country) : undefined} />
+        <Field label="Resident Country" name="residentCountry" value={form.residentCountry}
+          onChange={(k, v) => { set(k, v); set('residentCity', ''); }}
+          options={masterCountries.length ? masterCountries.map(c => ({ value: c, label: c })) : undefined} />
+        <Field label="Resident City" name="residentCity" value={form.residentCity} onChange={set}
+          options={citiesFor(form.residentCountry).length ? citiesFor(form.residentCountry) : undefined} />
         <Field label="Residency Status" name="residencyStatus" value={form.residencyStatus} onChange={set} options={RESIDENCY_OPTS} />
-        <Field label="Education" name="education" value={form.education} onChange={set} options={EDUCATION_OPTS} />
+        <Field label="Education" name="education" value={form.education} onChange={set}
+          options={educationOpts.length ? educationOpts : undefined} />
         <Field label="Field of Study" name="fieldOfStudy" value={form.fieldOfStudy} onChange={set} />
-        <Field label="Occupation" name="occupation" value={form.occupation} onChange={set} />
+        <Field label="Occupation" name="occupation" value={form.occupation} onChange={set}
+          options={occupationOpts.length ? occupationOpts : undefined} />
         <Field label="Profession / Job Title" name="profession" value={form.profession} onChange={set} />
       </SectionCard>
 
       {/* ── Family Details ────────────────────────────────────────────── */}
       <SectionCard title="Family Details">
-        <Field label="Father's Ethnicity" name="fatherEthnicity" value={form.fatherEthnicity} onChange={set} />
-        <Field label="Father's Country" name="fatherCountry" value={form.fatherCountry} onChange={set} />
-        <Field label="Father's City" name="fatherCity" value={form.fatherCity} onChange={set} />
+        <Field label="Father's Ethnicity" name="fatherEthnicity" value={form.fatherEthnicity} onChange={set}
+          options={ethnicityOpts.length ? ethnicityOpts : undefined} />
+        <Field label="Father's Country" name="fatherCountry" value={form.fatherCountry}
+          onChange={(k, v) => { set(k, v); set('fatherCity', ''); }}
+          options={masterCountries.length ? masterCountries.map(c => ({ value: c, label: c })) : undefined} />
+        <Field label="Father's City" name="fatherCity" value={form.fatherCity} onChange={set}
+          options={citiesFor(form.fatherCountry).length ? citiesFor(form.fatherCountry) : undefined} />
         <Field label="Father's Occupation" name="fatherOccupation" value={form.fatherOccupation} onChange={set} />
-        <Field label="Mother's Ethnicity" name="motherEthnicity" value={form.motherEthnicity} onChange={set} />
-        <Field label="Mother's Country" name="motherCountry" value={form.motherCountry} onChange={set} />
-        <Field label="Mother's City" name="motherCity" value={form.motherCity} onChange={set} />
+        <Field label="Mother's Ethnicity" name="motherEthnicity" value={form.motherEthnicity} onChange={set}
+          options={ethnicityOpts.length ? ethnicityOpts : undefined} />
+        <Field label="Mother's Country" name="motherCountry" value={form.motherCountry}
+          onChange={(k, v) => { set(k, v); set('motherCity', ''); }}
+          options={masterCountries.length ? masterCountries.map(c => ({ value: c, label: c })) : undefined} />
+        <Field label="Mother's City" name="motherCity" value={form.motherCity} onChange={set}
+          options={citiesFor(form.motherCountry).length ? citiesFor(form.motherCountry) : undefined} />
         <Field label="Mother's Occupation" name="motherOccupation" value={form.motherOccupation} onChange={set} />
-        <Field label="Total Siblings" name="siblings" value={form.siblings} onChange={set} type="number" />
+        <Field label="No. of Brothers" name="brothers" value={form.brothers} onChange={set} type="number" />
+        <Field label="No. of Sisters" name="sisters" value={form.sisters} onChange={set} type="number" />
       </SectionCard>
 
       {/* ── Preferences ───────────────────────────────────────────────── */}

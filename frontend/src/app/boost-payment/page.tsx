@@ -188,28 +188,18 @@ function BoostPaymentContent() {
                 {/* Reference number */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                    Bank Reference / Slip Number <span className="text-red-400">*</span>
+                    Email/Mobile Number <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
                     value={bankRef}
                     onChange={e => setBankRef(e.target.value)}
-                    placeholder="e.g. TXN123456789"
+                    placeholder="e.g. example@email.com"
                     className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-[#DB9D30] focus:ring-2 focus:ring-[#DB9D30]/10 transition bg-white"
                   />
                 </div>
 
-                {/* Remark */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Remark (optional)</label>
-                  <textarea
-                    value={remark}
-                    onChange={e => setRemark(e.target.value)}
-                    rows={2}
-                    placeholder="Your name or any note about the transfer…"
-                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-[#DB9D30] focus:ring-2 focus:ring-[#DB9D30]/10 transition bg-white resize-none"
-                  />
-                </div>
+
 
                 {/* Error / success message */}
                 {message && (

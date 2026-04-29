@@ -64,6 +64,8 @@ export class ProfileEditRequestService {
       motherCountry: profile.motherCountry,
       motherOccupation: profile.motherOccupation,
       siblings: profile.siblings,
+      brothers: profile.brothers,
+      sisters: profile.sisters,
       countryPreference: profile.countryPreference,
       aboutUs: profile.aboutUs,
       expectations: profile.expectations,
@@ -199,8 +201,8 @@ export class ProfileEditRequestService {
       'ethnicity','civilStatus','children','familyStatus','country','city','state',
       'residencyStatus','education','fieldOfStudy','occupation','profession',
       'fatherEthnicity','fatherCountry','fatherOccupation','motherEthnicity',
-      'motherCountry','motherOccupation','siblings','countryPreference',
-      'aboutUs','expectations','gender',
+      'motherCountry','motherOccupation','siblings','brothers','sisters','countryPreference',
+      'aboutUs','expectations','gender','extraQualification',
     ];
 
     // These fields are NON-NULLABLE in the schema — never set them to null.
