@@ -82,6 +82,29 @@ export class AuthService {
       entityId: user.id, entityLabel: user.email,
     });
 
+    // ── Login SMS notification (fire and forget) ──────────────────────────────
+    const loginPhone = user.phone || user.whatsappNumber;
+    if (loginPhone) {
+      const now = new Date().toLocaleString('en-GB', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', hour12: true,
+      });
+
+      let smsText: string;
+      const adminRoles = ['ADMIN', 'MARKETING_MANAGER', 'STAFF'];
+
+      if (adminRoles.includes(user.role)) {
+        // Admin account login alert
+        smsText = `Your ${user.role.replace('_', ' ')} account (${user.email}) just logged in at ${now}. If this wasn't you, contact support immediately.`;
+      } else {
+        // Regular user login alert
+        smsText = `You have successfully logged in to your account at ${now}. If this wasn't you, please contact us immediately.`;
+      }
+
+      this.sms.sendSms(loginPhone, smsText).catch(() => {});
+    }
+    // ──────────────────────────────────────────────────────────────────────────
+
     const token = this.signToken(user.id, user.email, user.role);
     return { success: true, token, user: { id: user.id, email: user.email, role: user.role } };
   }

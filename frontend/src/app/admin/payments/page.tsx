@@ -468,7 +468,6 @@ export default function AdminPaymentsPage() {
                     <tr key={p.id} className={`hover:bg-gray-50 transition ${i % 2 === 1 ? 'bg-[#FAFAFA]' : ''} ${p.status === 'PENDING' ? 'border-l-4 border-l-amber-400' : ''}`}>
                       <td className="px-5 py-3.5 text-gray-700 text-xs">{p.user?.email ?? '—'}</td>
                       <td className="px-5 py-3.5">
-                        <p className="font-medium text-gray-800">{p.childProfile?.name ?? '—'}</p>
                         {p.childProfile?.memberId && (
                           <p className="text-xs text-gray-400">{p.childProfile.memberId}</p>
                         )}

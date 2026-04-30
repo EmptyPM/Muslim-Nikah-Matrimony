@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { adminApi } from '@/services/api';
 
 type Boost = {
@@ -17,6 +17,8 @@ type Boost = {
   daysLeft: number;
   user: { email: string };
 };
+
+type ProfileOption = { id: string; name: string; memberId: string; status: string; gender: string };
 
 /* ─── Extend Modal ──────────────────────────────────────────── */
 function ExtendModal({
@@ -136,6 +138,196 @@ function ExtendModal({
   );
 }
 
+/* ─── Add Boost Modal ───────────────────────────────────────── */
+function AddBoostModal({
+  onClose,
+  onConfirm,
+  loading,
+}: {
+  onClose: () => void;
+  onConfirm: (profileId: string, days: number) => void;
+  loading: boolean;
+}) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<ProfileOption[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [selected, setSelected] = useState<ProfileOption | null>(null);
+  const [days, setDays] = useState('');
+  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const parsed = parseInt(days, 10);
+  const valid = selected !== null && !isNaN(parsed) && parsed > 0 && parsed <= 365;
+
+  const search = (q: string) => {
+    setQuery(q);
+    setSelected(null);
+    if (debounce.current) clearTimeout(debounce.current);
+    if (!q.trim()) { setResults([]); return; }
+    debounce.current = setTimeout(() => {
+      setSearching(true);
+      adminApi.profiles()
+        .then(r => {
+          const all: ProfileOption[] = r.data ?? [];
+          const lower = q.toLowerCase();
+          setResults(all.filter((p: ProfileOption) =>
+            p.memberId?.toLowerCase().includes(lower)
+          ).slice(0, 8));
+        })
+        .catch(() => setResults([]))
+        .finally(() => setSearching(false));
+    }, 300);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 space-y-5"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-gray-800">Add Boost</h2>
+            <p className="text-sm text-gray-500 mt-0.5">Search for a profile and set boost duration</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition mt-0.5">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Profile Search */}
+        <div className="space-y-1.5">
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Search Profile *
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              value={selected ? `${selected.name} — ${selected.memberId}` : query}
+              onChange={e => { setSelected(null); search(e.target.value); }}
+              placeholder="Member ID (e.g. MN-000034)"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#DB9D30]/40 focus:border-[#DB9D30] transition pr-8"
+            />
+            {searching && (
+              <svg className="w-4 h-4 animate-spin absolute right-3 top-3 text-gray-400" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              </svg>
+            )}
+          </div>
+
+          {/* Search results dropdown */}
+          {results.length > 0 && !selected && (
+            <div className="border border-gray-100 rounded-xl overflow-hidden shadow-lg max-h-48 overflow-y-auto">
+              {results.map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => { setSelected(p); setResults([]); setQuery(''); }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#DB9D30]/5 text-left transition border-b border-gray-50 last:border-0"
+                >
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${p.gender === 'FEMALE' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}`}>
+                    {p.name?.[0]?.toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 truncate">{p.name}</p>
+                    <p className="text-xs text-gray-400 font-mono">{p.memberId} · {p.status}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Selected pill */}
+          {selected && (
+            <div className="flex items-center gap-2 bg-[#DB9D30]/10 border border-[#DB9D30]/30 rounded-xl px-3 py-2">
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${selected.gender === 'FEMALE' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}`}>
+                {selected.name?.[0]?.toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-800 truncate">{selected.name}</p>
+                <p className="text-xs text-gray-500 font-mono">{selected.memberId}</p>
+              </div>
+              <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600 transition text-xs font-bold">✕</button>
+            </div>
+          )}
+        </div>
+
+        {/* Duration */}
+        <div className="space-y-1.5">
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Boost Duration *
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={1}
+              max={365}
+              value={days}
+              onChange={e => setDays(e.target.value)}
+              placeholder="e.g. 30"
+              className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#DB9D30]/40 focus:border-[#DB9D30] transition"
+            />
+            <span className="text-sm text-gray-400 font-medium">days</span>
+          </div>
+          {days && !(!isNaN(parsed) && parsed > 0 && parsed <= 365) && (
+            <p className="text-xs text-red-500">Enter a number between 1 and 365.</p>
+          )}
+        </div>
+
+        {/* Quick picks */}
+        <div className="flex flex-wrap gap-2">
+          {[1, 7, 15, 30, 60, 90].map(d => (
+            <button
+              key={d}
+              onClick={() => setDays(String(d))}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition ${
+                days === String(d)
+                  ? 'bg-[#DB9D30] text-white border-[#DB9D30]'
+                  : 'bg-[#DB9D30]/10 text-[#8B5E00] border-[#DB9D30]/30 hover:bg-[#DB9D30]/20'
+              }`}
+            >
+              {d}d
+            </button>
+          ))}
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3 pt-1">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="flex-1 border border-gray-200 text-gray-600 rounded-xl py-2.5 text-sm font-semibold hover:bg-gray-50 transition disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => valid && onConfirm(selected!.id, parsed)}
+            disabled={!valid || loading}
+            className="flex-1 bg-[#1C3B35] text-white rounded-xl py-2.5 text-sm font-semibold hover:bg-[#14302a] transition disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                Boosting…
+              </>
+            ) : (
+              <>⚡ Apply Boost</>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Page ──────────────────────────────────────────────────── */
 export default function AdminBoostsPage() {
   const [boosts, setBoosts]   = useState<Boost[]>([]);
@@ -143,6 +335,8 @@ export default function AdminBoostsPage() {
   const [toast, setToast]     = useState<{ text: string; ok: boolean } | null>(null);
   const [acting, setActing]   = useState<string | null>(null);
   const [filter, setFilter]   = useState<'all' | 'active' | 'expired'>('all');
+  const [addBoostOpen, setAddBoostOpen] = useState(false);
+  const [addBoostLoading, setAddBoostLoading] = useState(false);
 
   /* extend modal state */
   const [extendTarget, setExtendTarget] = useState<Boost | null>(null);
@@ -189,6 +383,18 @@ export default function AdminBoostsPage() {
     } finally { setActing(null); }
   };
 
+  const handleAddBoostConfirm = async (profileId: string, days: number) => {
+    setAddBoostLoading(true);
+    try {
+      const res = await adminApi.addBoost(profileId, days);
+      showToast(res.message ?? `Boost applied for ${days} days!`);
+      setAddBoostOpen(false);
+      load();
+    } catch (e: any) {
+      showToast(e.message ?? 'Failed to apply boost', false);
+    } finally { setAddBoostLoading(false); }
+  };
+
   const displayed = boosts.filter(b =>
     filter === 'all' ? true
     : filter === 'active' ? b.isActive
@@ -200,6 +406,15 @@ export default function AdminBoostsPage() {
 
   return (
     <div className="font-poppins space-y-6">
+
+      {/* Add Boost Modal */}
+      {addBoostOpen && (
+        <AddBoostModal
+          onClose={() => setAddBoostOpen(false)}
+          onConfirm={handleAddBoostConfirm}
+          loading={addBoostLoading}
+        />
+      )}
 
       {/* Extend Modal */}
       {extendTarget && (
@@ -217,13 +432,24 @@ export default function AdminBoostsPage() {
           <h1 className="text-[22px] sm:text-[26px] md:text-[30px] lg:text-[34px] xl:text-[37px] 2xl:text-[40px] font-poppins font-medium text-[#121514]">Profile Boosts</h1>
           <p className="text-[#121514AD]/68 title-sub-top mt-0.5">Manage boosted profiles — extend or remove VIP status</p>
         </div>
-        <button onClick={load} className="self-start sm:self-auto flex items-center gap-2 text-sm border border-gray-200 text-gray-600 px-4 py-2.5 rounded-xl hover:bg-gray-50 transition font-semibold">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <polyline points="1 4 1 10 7 10" /><polyline points="23 20 23 14 17 14" />
-            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
-          </svg>
-          Refresh
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={() => setAddBoostOpen(true)}
+            className="flex items-center gap-2 text-sm bg-[#1C3B35] text-white px-4 py-2.5 rounded-xl hover:bg-[#14302a] transition font-semibold"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Add Boost
+          </button>
+          <button onClick={load} className="flex items-center gap-2 text-sm border border-gray-200 text-gray-600 px-4 py-2.5 rounded-xl hover:bg-gray-50 transition font-semibold">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <polyline points="1 4 1 10 7 10" /><polyline points="23 20 23 14 17 14" />
+              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
+            </svg>
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Toast */}

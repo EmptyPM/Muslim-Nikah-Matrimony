@@ -134,6 +134,11 @@ export class AdminController {
     return this.service.extendBoost(id, body.days);
   }
 
+  @Post('boosts')
+  adminBoostProfile(@Body() body: { profileId: string; days: number }) {
+    return this.service.adminBoostProfile(body.profileId, body.days);
+  }
+
   // ─── Packages ─────────────────────────────────────────────────────────────
   @Get('packages')
   getPackages(@Query('type') type?: string) { return this.service.getPackages(type); }
