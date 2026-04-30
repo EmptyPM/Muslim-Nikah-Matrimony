@@ -342,19 +342,32 @@ export default function AdminSettingsPage() {
 
   /* Load */
   useEffect(() => {
-    Promise.all([userApi.getMe(), adminApi.getSiteSettings()])
-      .then(([me, s]) => {
+    const role = getAdminRole();
+    setAdminRole(role);
+
+    // Always load account info
+    const loadMe = userApi.getMe()
+      .then((me) => {
         setAdminEmail(me.data?.email ?? '');
         setAdminPhone(me.data?.phone ?? '');
-        const d = s.data ?? {};
-        setWhatsapp(d.whatsappContact ?? '+94 705 687 697');
-        setB1n(d.bank1AccName ?? 'M T M Akram'); setB1no(d.bank1AccNo ?? '112054094468');
-        setB1b(d.bank1BankName ?? 'Sampath Bank PLC'); setB1br(d.bank1Branch ?? 'Ratmalana');
-        setB2n(d.bank2AccName ?? 'M T M Akram'); setB2no(d.bank2AccNo ?? '89870069');
-        setB2b(d.bank2BankName ?? 'BOC'); setB2br(d.bank2Branch ?? 'Anuradhapura');
       })
-      .catch(() => showToast('Failed to load settings', false))
-      .finally(() => setPageLoading(false));
+      .catch(() => showToast('Failed to load account info', false));
+
+    // Only load platform settings for ADMIN
+    const loadPlatform = role === 'ADMIN'
+      ? adminApi.getSiteSettings()
+          .then((s) => {
+            const d = s.data ?? {};
+            setWhatsapp(d.whatsappContact ?? '+94 705 687 697');
+            setB1n(d.bank1AccName ?? 'M T M Akram'); setB1no(d.bank1AccNo ?? '112054094468');
+            setB1b(d.bank1BankName ?? 'Sampath Bank PLC'); setB1br(d.bank1Branch ?? 'Ratmalana');
+            setB2n(d.bank2AccName ?? 'M T M Akram'); setB2no(d.bank2AccNo ?? '89870069');
+            setB2b(d.bank2BankName ?? 'BOC'); setB2br(d.bank2Branch ?? 'Anuradhapura');
+          })
+          .catch(() => {}) // silently ignore for non-admin
+      : Promise.resolve();
+
+    Promise.all([loadMe, loadPlatform]).finally(() => setPageLoading(false));
   }, []);
 
   const saveAccount = async () => {
@@ -670,7 +683,6 @@ export default function AdminSettingsPage() {
                   <ul className="space-y-2.5">
                     {[
                       'Use a unique password not used on other sites.',
-                      'Enable 2FA when available for extra protection.',
                       'Never share your admin credentials with anyone.',
                       'Change your password regularly (every 90 days).',
                     ].map((tip) => (

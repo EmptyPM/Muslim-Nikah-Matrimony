@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PaymentService } from '../payment/payment.service';
@@ -491,6 +491,28 @@ export class AdminService {
     await this.prisma.childProfile.update({ where: { id }, data: { boostExpiresAt: newExpiry } });
     return { success: true, data: { boostExpiresAt: newExpiry } };
   }
+
+  async adminBoostProfile(profileId: string, days: number) {
+    if (!profileId) throw new BadRequestException('Profile ID is required');
+    if (!days || days < 1 || days > 365) throw new BadRequestException('Days must be between 1 and 365');
+    const profile = await this.prisma.childProfile.findUnique({
+      where: { id: profileId },
+      select: { id: true, name: true, memberId: true, boostExpiresAt: true, status: true },
+    });
+    if (!profile) throw new NotFoundException('Profile not found');
+    // Extend from current expiry if already active, otherwise from now
+    const base = profile.boostExpiresAt && new Date(profile.boostExpiresAt) > new Date()
+      ? new Date(profile.boostExpiresAt)
+      : new Date();
+    const newExpiry = new Date(base.getTime() + days * 86400000);
+    await this.prisma.childProfile.update({ where: { id: profileId }, data: { boostExpiresAt: newExpiry } });
+    return {
+      success: true,
+      message: `${profile.name} (${profile.memberId}) boosted for ${days} days`,
+      data: { boostExpiresAt: newExpiry },
+    };
+  }
+
 
   // ─── Analytics ───────────────────────────────────────────────
   async getAnalytics() {

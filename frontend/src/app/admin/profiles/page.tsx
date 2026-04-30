@@ -196,7 +196,6 @@ export default function AdminProfilesPage() {
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
                   <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 tracking-wide w-10">#</th>
-                  <SortTh colKey="name" label="Name" />
                   <SortTh colKey="owner" label="Owner" />
                   <SortTh colKey="gender" label="Gender" />
                   <SortTh colKey="location" label="Location" />
@@ -209,7 +208,6 @@ export default function AdminProfilesPage() {
                 {pageData.map((p, i) => (
                   <tr key={p.id} className={`hover:bg-gray-50 transition ${i % 2 === 1 ? 'bg-[#FAFAFA]' : ''}`}>
                     <td className="px-5 py-3.5 text-xs text-gray-400 font-mono">{(page - 1) * PER_PAGE + i + 1}</td>
-                    <td className="px-5 py-3.5 font-semibold text-gray-800 whitespace-nowrap">{p.name}</td>
                     <td className="px-5 py-3.5 text-xs text-gray-500">{p.user?.email ?? '—'}</td>
                     <td className="px-5 py-3.5">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${p.gender === 'FEMALE' ? 'bg-pink-50 text-pink-600' : 'bg-blue-50 text-blue-600'}`}>

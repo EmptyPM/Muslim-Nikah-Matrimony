@@ -13,7 +13,7 @@ type User = {
   _count?: { childProfiles: number };
 };
 
-type Tab = 'ALL' | 'ADMIN' | 'PARENT';
+type Tab = 'ALL' | 'ADMIN' | 'PARENT' | 'MARKETING_MANAGER' | 'STAFF';
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -92,18 +92,27 @@ export default function AdminUsersPage() {
   const totalPages = Math.ceil(sorted.length / PER_PAGE);
   const pageData = sorted.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-  const roleColor = (role: string) =>
-    role === 'ADMIN'
-      ? 'bg-purple-100 text-purple-700 border border-purple-200'
-      : 'bg-[#EAF2EE] text-[#1C3B35] border border-[#c8dfd7]';
+  const roleColor = (role: string) => {
+    const map: Record<string, string> = {
+      ADMIN:             'bg-purple-100 text-purple-700 border border-purple-200',
+      MARKETING_MANAGER: 'bg-blue-100 text-blue-700 border border-blue-200',
+      STAFF:             'bg-amber-100 text-amber-700 border border-amber-200',
+      PARENT:            'bg-[#EAF2EE] text-[#1C3B35] border border-[#c8dfd7]',
+    };
+    return map[role] ?? 'bg-gray-100 text-gray-500 border border-gray-200';
+  };
 
-  const adminCount = users.filter((u) => u.role === 'ADMIN').length;
-  const parentCount = users.filter((u) => u.role === 'PARENT').length;
+  const adminCount   = users.filter((u) => u.role === 'ADMIN').length;
+  const parentCount  = users.filter((u) => u.role === 'PARENT').length;
+  const mmCount      = users.filter((u) => u.role === 'MARKETING_MANAGER').length;
+  const staffCount   = users.filter((u) => u.role === 'STAFF').length;
 
   const tabs: { key: Tab; label: string; count: number }[] = [
-    { key: 'ALL', label: 'All Users', count: users.length },
-    { key: 'PARENT', label: 'Parents', count: parentCount },
-    { key: 'ADMIN', label: 'Admins', count: adminCount },
+    { key: 'ALL',               label: 'All Users',         count: users.length },
+    { key: 'PARENT',            label: 'Parents',           count: parentCount },
+    { key: 'ADMIN',             label: 'Admins',            count: adminCount },
+    { key: 'MARKETING_MANAGER', label: 'Marketing Manager', count: mmCount },
+    { key: 'STAFF',             label: 'Staff',             count: staffCount },
   ];
 
   const handleViewAccount = (u: User) => {
@@ -178,6 +187,12 @@ export default function AdminUsersPage() {
           <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-blue-50 text-blue-700">
             {parentCount} Parents
           </span>
+          <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-blue-100 text-blue-700">
+            {mmCount} Marketing
+          </span>
+          <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-amber-100 text-amber-700">
+            {staffCount} Staff
+          </span>
           <button
             onClick={() => router.push('/admin/users/create')}
             className="flex items-center gap-1.5 bg-[#1C3B35] hover:bg-[#15302a] text-white text-xs font-semibold px-4 py-1.5 rounded-full transition shadow-sm"
@@ -242,7 +257,7 @@ export default function AdminUsersPage() {
             <div className="flex items-center gap-2 shrink-0">
               <span className="text-xs text-gray-500 font-medium whitespace-nowrap">Filter:</span>
               <div className="flex gap-1.5">
-                {(['ALL', 'PARENT', 'ADMIN'] as const).map((r) => (
+                {(['ALL', 'PARENT', 'ADMIN', 'MARKETING_MANAGER', 'STAFF'] as const).map((r) => (
                   <button
                     key={r}
                     onClick={() => { setTab(r); setPage(1); }}
@@ -252,7 +267,7 @@ export default function AdminUsersPage() {
                         : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    {r === 'ALL' ? 'All' : r === 'PARENT' ? 'Parents' : 'Admins'}
+                    {r === 'ALL' ? 'All' : r === 'PARENT' ? 'Parents' : r === 'ADMIN' ? 'Admins' : r === 'MARKETING_MANAGER' ? 'Marketing' : 'Staff'}
                   </button>
                 ))}
               </div>

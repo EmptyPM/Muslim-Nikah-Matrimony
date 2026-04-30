@@ -204,6 +204,12 @@ export const adminApi = {
   extendBoost: (id: string, days: number) =>
     request<any>(`/admin/boosts/${id}/extend`, { method: 'PUT', body: JSON.stringify({ days }) }),
 
+  addBoost: (profileId: string, days: number) =>
+    request<any>('/admin/boosts', { method: 'POST', body: JSON.stringify({ profileId, days }) }),
+
+  searchProfiles: (query: string) =>
+    request<any>(`/admin/profiles?search=${encodeURIComponent(query)}`),
+
   // Packages
   getPackages: () => request<any>('/admin/packages'),
   createPackage: (body: {
