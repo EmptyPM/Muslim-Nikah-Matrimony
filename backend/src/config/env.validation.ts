@@ -25,6 +25,9 @@ export const envValidationSchema = Joi.object({
   // ── Optional — only required when Stripe is enabled ───────────────
   STRIPE_SECRET_KEY: Joi.string().optional(),
   STRIPE_WEBHOOK_SECRET: Joi.string().optional(),
+  CLOUDINARY_CLOUD_NAME: Joi.string().optional(),
+  CLOUDINARY_API_KEY: Joi.string().optional(),
+  CLOUDINARY_API_SECRET: Joi.string().optional(),
 
   // ── Optional — CORS ───────────────────────────────────────────────
   FRONTEND_URL: Joi.string().uri().optional().default('http://localhost:3001'),

@@ -9,9 +9,9 @@ export class SendMessageDto {
   @IsNotEmpty()
   receiverProfileId: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  content: string;
+  content?: string;
 
   @IsOptional()
   @IsString()

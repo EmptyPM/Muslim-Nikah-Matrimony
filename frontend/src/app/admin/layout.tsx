@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import NotificationBell from '@/components/ui/NotificationBell';
 
-const ADMIN_LOGO_SRC = '/images/logo%201.png';
+const ADMIN_LOGO_SRC = '/images/muslimLogo1.png';
 
 const navItems = [
   {
@@ -215,7 +215,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <aside className="hidden w-64 shrink-0 flex-col rounded-[40px] bg-white p-8 shadow-sm ring-1 ring-black/5 md:flex md:min-h-[calc(100vh-2.5rem)]">
         <div className="mb-10 shrink-0">
           <Link href="/" className="block outline-none focus-visible:ring-2 focus-visible:ring-black/20 focus-visible:ring-offset-2 rounded-lg">
-            {/* Place file at public/images/logo 1.png */}
             <img
               src={ADMIN_LOGO_SRC}
               alt="Muslim Nikah"

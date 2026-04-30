@@ -50,7 +50,7 @@ export default function ContactInfoSection() {
                 {...(href.startsWith("http")
                   ? { target: "_blank", rel: "noopener noreferrer" }
                   : {})}
-                className="font-poppins title-sub-top cursor-pointer text-[#878787] transition-colors hover:text-[#397466] hover:underline underline-offset-2"
+                className="font-poppins title-sub-top cursor-pointer text-[#878787] transition-colors hover:text-[#DB9D30] hover:underline underline-offset-2"
               >
                 {detail}
               </a>

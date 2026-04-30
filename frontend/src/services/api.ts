@@ -129,7 +129,7 @@ export const visibilityApi = {
 
 // ─── Chat ──────────────────────────────────────────────────────────────────
 export const chatApi = {
-  send: (body: { senderProfileId: string; receiverProfileId: string; content: string; imageUrl?: string }) =>
+  send: (body: { senderProfileId: string; receiverProfileId: string; content?: string; imageUrl?: string }) =>
     request<any>('/chat/send', { method: 'POST', body: JSON.stringify(body) }),
   history: (myProfileId: string, otherProfileId: string) =>
     request<any>(`/chat/history/${myProfileId}/${otherProfileId}`),
@@ -139,6 +139,25 @@ export const chatApi = {
     request<any>('/chat/mark-read', { method: 'POST', body: JSON.stringify({ myProfileId, otherProfileId }) }),
   unreadCounts: (profileId: string) =>
     request<any>(`/chat/unread/${profileId}`),
+  uploadAttachment: async (file: File) => {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${BASE}/chat/upload`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const err: any = new Error(data?.message ?? 'Upload failed');
+      err.status = res.status;
+      throw err;
+    }
+    return data;
+  },
 };
 
 // ─── Admin ─────────────────────────────────────────────────────────────────

@@ -4,6 +4,14 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SendMessageDto } from './dto/chat.dto';
 import { RuleEngineService } from '../rule-engine/rule-engine.service';
 import { NotificationService } from '../notification/notification.service';
+import { v2 as cloudinary } from 'cloudinary';
+
+type UploadedAttachment = {
+  mimetype: string;
+  originalname: string;
+  size: number;
+  buffer: Buffer;
+};
 
 @Injectable()
 export class ChatService {
@@ -17,6 +25,11 @@ export class ChatService {
   ) {}
 
   async send(userId: string, dto: SendMessageDto) {
+    const normalizedContent = (dto.content ?? '').trim();
+    if (!normalizedContent && !dto.imageUrl) {
+      throw new BadRequestException({ success: false, message: 'Message content or attachment is required', error_code: 'EMPTY_MESSAGE' });
+    }
+
     const [senderProfile, receiverProfile] = await Promise.all([
       this.prisma.childProfile.findUnique({ where: { id: dto.senderProfileId }, include: { subscription: true } }),
       this.prisma.childProfile.findUnique({ where: { id: dto.receiverProfileId }, include: { subscription: true } }),
@@ -63,7 +76,7 @@ export class ChatService {
         senderId: userId,
         senderProfileId: dto.senderProfileId,
         receiverProfileId: dto.receiverProfileId,
-        content: dto.content,
+        content: normalizedContent || (dto.imageUrl ? '📎 Attachment' : ''),
         imageUrl: dto.imageUrl,
       },
     });
@@ -77,11 +90,56 @@ export class ChatService {
       userId: receiverProfile.userId,
       type: 'NEW_MESSAGE',
       title: `New message from ${senderName}`,
-      body: dto.content.length > 60 ? dto.content.slice(0, 60) + '…' : dto.content,
+      body: (normalizedContent || (dto.imageUrl ? '📎 Attachment' : 'New message')).slice(0, 60),
       meta: { messageId: message.id, senderProfileId: dto.senderProfileId, senderName },
     });
 
     return { success: true, data: message };
+  }
+
+  async uploadAttachment(file: UploadedAttachment) {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+    if (!cloudName || !apiKey || !apiSecret) {
+      throw new BadRequestException({ success: false, message: 'Cloudinary is not configured on server', error_code: 'CLOUDINARY_CONFIG_MISSING' });
+    }
+
+    cloudinary.config({
+      cloud_name: cloudName,
+      api_key: apiKey,
+      api_secret: apiSecret,
+    });
+
+    const isImage = file.mimetype.startsWith('image/');
+    const resourceType: 'image' | 'raw' = isImage ? 'image' : 'raw';
+    const folder = isImage ? 'chat/images' : 'chat/documents';
+
+    const result = await new Promise<any>((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder,
+          resource_type: resourceType,
+          type: 'upload',
+          access_mode: 'public',
+          use_filename: true,
+          unique_filename: true,
+          filename_override: file.originalname,
+        },
+        (error, uploaded) => {
+          if (error || !uploaded) return reject(error ?? new Error('Upload failed'));
+          resolve(uploaded);
+        },
+      );
+      stream.end(file.buffer);
+    });
+
+    return {
+      url: result.secure_url as string,
+      originalName: file.originalname,
+      mimeType: file.mimetype,
+      kind: isImage ? 'image' : 'document',
+    };
   }
 
   async getHistory(viewerProfileId: string, otherProfileId: string) {

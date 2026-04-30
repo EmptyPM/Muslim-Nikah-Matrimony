@@ -9,6 +9,7 @@ type Message = {
   content: string; imageUrl?: string | null; createdAt: string; readAt?: string | null;
 };
 type Conversation = { id: string; name: string; lastMsg?: string };
+type AttachmentDraft = { url: string; name: string; mimeType: string; kind: 'image' | 'document' };
 
 // Broadcast total unread count to the rest of the app (e.g. nav badge)
 // NOTE: dispatchEvent is synchronous so we defer it to the next tick to avoid
@@ -47,7 +48,8 @@ export default function ChatPage() {
   const [selectedChat, setSelectedChat] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMsg, setNewMsg] = useState('');
-  const [imageFile, setImageFile] = useState<string | null>(null); // base64 preview
+  const [attachment, setAttachment] = useState<AttachmentDraft | null>(null);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
@@ -59,7 +61,8 @@ export default function ChatPage() {
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const selectedChatRef = useRef('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const documentInputRef = useRef<HTMLInputElement>(null);
 
   // Keep ref in sync so socket handlers always have the latest selected chat
   useEffect(() => { selectedChatRef.current = selectedChat; }, [selectedChat]);
@@ -268,22 +271,27 @@ export default function ChatPage() {
 
   // ── Send message ──────────────────────────────────────────────────
   const send = async () => {
-    if ((!newMsg.trim() && !imageFile) || !selectedChat || sending) return;
-    const content = newMsg.trim() || '📷 Image';
-    const imgUrl = imageFile ?? undefined;
+    if ((!newMsg.trim() && !attachment) || !selectedChat || sending || uploadingAttachment) return;
+    const content = newMsg.trim();
+    const attachmentUrl = attachment?.url;
+    const isDocument = attachment?.kind === 'document';
+    const finalContent = isDocument
+      ? (content ? `${content}\n📎 ${attachment?.name}` : `📎 ${attachment?.name}`)
+      : (content || (attachment ? '📷 Image' : ''));
+
     setNewMsg('');
-    setImageFile(null);
+    setAttachment(null);
     setSending(true);
     const socket = socketRef.current;
 
     try {
-      if (imgUrl) {
+      if (attachmentUrl) {
         // Always use REST for image messages — WebSocket payloads have size limits
         const result = await chatApi.send({
           senderProfileId: selectedMyProfile,
           receiverProfileId: selectedChat,
-          content,
-          imageUrl: imgUrl,
+          content: finalContent,
+          imageUrl: attachmentUrl,
         });
         if (result?.data) {
           setMessages(prev => {
@@ -299,7 +307,7 @@ export default function ChatPage() {
           id: tempId,
           senderProfileId: selectedMyProfile,
           receiverProfileId: selectedChat,
-          content,
+          content: finalContent,
           createdAt: new Date().toISOString(),
           readAt: null,
         };
@@ -307,13 +315,13 @@ export default function ChatPage() {
         setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
 
         // Emit via socket — server will save and echo new_message (real ID)
-        socket.emit('send_message', { senderProfileId: selectedMyProfile, receiverProfileId: selectedChat, content });
+        socket.emit('send_message', { senderProfileId: selectedMyProfile, receiverProfileId: selectedChat, content: finalContent });
 
         // After a short delay, reload history to replace temp message with real one
         setTimeout(() => loadHistory(selectedMyProfile, selectedChat), 300);
       } else {
         // Fallback: REST
-        const result = await chatApi.send({ senderProfileId: selectedMyProfile, receiverProfileId: selectedChat, content });
+        const result = await chatApi.send({ senderProfileId: selectedMyProfile, receiverProfileId: selectedChat, content: finalContent });
         if (result?.data) {
           setMessages(prev => {
             if (prev.some(m => m.id === result.data.id)) return prev;
@@ -333,7 +341,28 @@ export default function ChatPage() {
     loadConversations(selectedMyProfile);
   };
 
-  // ── Pick image ────────────────────────────────────────────────────
+  // ── Upload image/document to Cloudinary via backend ───────────────
+  const uploadAttachment = async (file: File, inputEl?: HTMLInputElement | null) => {
+    if (!selectedChat) {
+      setChatError('Select a conversation before uploading an attachment.');
+      if (inputEl) inputEl.value = '';
+      return;
+    }
+    setUploadingAttachment(true);
+    try {
+      const uploaded = await chatApi.uploadAttachment(file);
+      setAttachment(uploaded.data);
+      setChatError(null);
+    } catch (e: any) {
+      const msg = e?.message ?? 'Failed to upload attachment';
+      setChatError(msg);
+      setTimeout(() => setChatError(null), 5000);
+    } finally {
+      setUploadingAttachment(false);
+      if (inputEl) inputEl.value = '';
+    }
+  };
+
   const pickImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -342,10 +371,32 @@ export default function ChatPage() {
       e.target.value = '';
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => setImageFile(reader.result as string);
-    reader.readAsDataURL(file);
-    e.target.value = ''; // reset so same file can be picked again
+    uploadAttachment(file, e.target);
+  };
+
+  const pickDocument = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Document is too large. Please choose a file under 10 MB.');
+      e.target.value = '';
+      return;
+    }
+    uploadAttachment(file, e.target);
+  };
+
+  const handleInputPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const fileItem = [...e.clipboardData.items].find((item) => item.type.startsWith('image/'));
+    if (!fileItem) return;
+    const file = fileItem.getAsFile();
+    if (!file) return;
+    e.preventDefault();
+    if (file.size > 5 * 1024 * 1024) {
+      setChatError('Pasted image is too large (max 5 MB).');
+      setTimeout(() => setChatError(null), 5000);
+      return;
+    }
+    uploadAttachment(file);
   };
 
   // ── Typing indicator ──────────────────────────────────────────────
@@ -539,6 +590,10 @@ export default function ChatPage() {
                     const prevMsg = messages[i - 1];
                     const showAvatar = !isMine && (!prevMsg || prevMsg.senderProfileId !== m.senderProfileId);
                     const isRead = !!m.readAt;
+                    const normalizedContent = (m.content ?? '').trim();
+                    const hasAttachment = !!m.imageUrl;
+                    const isDocumentAttachment = hasAttachment && normalizedContent.includes('📎 ');
+                    const contentWithoutDocMarker = normalizedContent.replace(/(?:\n)?📎\s.*$/, '').trim();
 
                     return (
                       <div key={m.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'} items-end gap-2`}>
@@ -549,17 +604,27 @@ export default function ChatPage() {
                         )}
                         <div className={`max-w-[72%] px-4 py-2.5 rounded-2xl text-sm shadow-sm ${isMine ? 'bg-[#1C3B35] text-white rounded-br-md' : 'bg-white text-gray-800 rounded-bl-md border border-gray-100'}`}>
                           {/* Image attachment */}
-                          {m.imageUrl && (
-                            <a href={m.imageUrl} target="_blank" rel="noreferrer" className="block mb-2">
+                          {hasAttachment && (isDocumentAttachment ? (
+                            <a
+                              href={m.imageUrl!}
+                              target="_blank"
+                              rel="noreferrer"
+                              className={`mb-2 flex items-center gap-2 rounded-xl border px-3 py-2 text-xs ${isMine ? 'border-white/30 bg-white/10 text-white' : 'border-gray-200 bg-gray-50 text-gray-700'}`}
+                            >
+                              <span className="text-sm" aria-hidden>📄</span>
+                              <span className="truncate">Open document</span>
+                            </a>
+                          ) : (
+                            <a href={m.imageUrl!} target="_blank" rel="noreferrer" className="block mb-2">
                               <img
-                                src={m.imageUrl}
+                                src={m.imageUrl!}
                                 alt="attachment"
                                 className="max-w-[220px] max-h-[200px] rounded-xl object-cover border border-white/20 cursor-pointer hover:opacity-90 transition"
                               />
                             </a>
-                          )}
-                          {m.content && m.content !== '📷 Image' && (
-                            <p className="leading-relaxed break-words">{m.content}</p>
+                          ))}
+                          {contentWithoutDocMarker && contentWithoutDocMarker !== '📷 Image' && contentWithoutDocMarker !== '📎 Attachment' && (
+                            <p className="leading-relaxed break-words">{contentWithoutDocMarker}</p>
                           )}
                           <div className={`flex items-center justify-end gap-0.5 mt-1 ${isMine ? 'text-white/60' : 'text-gray-400'}`}>
                             <span className="text-xs">
@@ -604,34 +669,49 @@ export default function ChatPage() {
                   </div>
                 )}
                 {/* Image preview strip */}
-                {imageFile && (
+                {attachment && (
                   <div className="flex items-center gap-2 px-4 pt-3 pb-0">
                     <div className="relative inline-block">
-                      <img src={imageFile} alt="preview" className="h-16 w-16 rounded-xl object-cover border border-gray-200 shadow-sm" />
+                      {attachment.kind === 'image' ? (
+                        <img src={attachment.url} alt="preview" className="h-16 w-16 rounded-xl object-cover border border-gray-200 shadow-sm" />
+                      ) : (
+                        <div className="h-16 w-16 rounded-xl border border-gray-200 bg-gray-50 shadow-sm flex items-center justify-center text-lg">
+                          📄
+                        </div>
+                      )}
                       <button
                         type="button"
-                        onClick={() => setImageFile(null)}
+                        onClick={() => setAttachment(null)}
                         className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-700 text-white rounded-full flex items-center justify-center text-[10px] hover:bg-red-500 transition shadow"
                       >
                         ✕
                       </button>
                     </div>
-                    <span className="text-xs text-gray-400">Image ready to send</span>
+                    <span className="text-xs text-gray-400 truncate">
+                      {uploadingAttachment ? 'Uploading attachment...' : `${attachment.kind === 'image' ? 'Image' : 'Document'} ready: ${attachment.name}`}
+                    </span>
                   </div>
                 )}
                 <div className="px-4 py-3 flex gap-2 items-end min-w-0">
-                  {/* Hidden file input */}
+                  {/* Hidden file inputs */}
                   <input
-                    ref={fileInputRef}
+                    ref={imageInputRef}
                     type="file"
                     accept="image/*"
                     className="hidden"
                     onChange={pickImage}
                   />
+                  <input
+                    ref={documentInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                    className="hidden"
+                    onChange={pickDocument}
+                  />
                   {/* Image attach button */}
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => imageInputRef.current?.click()}
                     title="Attach image"
                     className="flex-shrink-0 p-2.5 rounded-xl text-gray-400 hover:text-[#1C3B35] hover:bg-gray-100 transition border border-gray-200"
                   >
@@ -641,14 +721,26 @@ export default function ChatPage() {
                       <polyline points="21 15 16 10 5 21" />
                     </svg>
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => documentInputRef.current?.click()}
+                    title="Attach document"
+                    className="flex-shrink-0 p-2.5 rounded-xl text-gray-400 hover:text-[#1C3B35] hover:bg-gray-100 transition border border-gray-200"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                      <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                  </button>
                   <input
                     value={newMsg}
                     onChange={e => handleTyping(e.target.value)}
+                    onPaste={handleInputPaste}
                     onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())}
                     placeholder={`Message ${selectedConvName}…`}
                     className="flex-1 min-w-0 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 outline-none focus:border-[#1C3B35] transition bg-gray-50 focus:bg-white"
                   />
-                  <button onClick={send} disabled={sending || (!newMsg.trim() && !imageFile)}
+                  <button onClick={send} disabled={sending || uploadingAttachment || (!newMsg.trim() && !attachment)}
                     className="bg-[#1C3B35] text-white p-2.5 rounded-xl hover:bg-[#15302a] transition disabled:opacity-50 flex-shrink-0">
                     {sending
                       ? <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" /></svg>
