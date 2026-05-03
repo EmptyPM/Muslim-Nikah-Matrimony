@@ -16,6 +16,21 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     },
   });
 
+  // ── Auto-logout: if the server returns 401, the account was deleted or
+  // the token is invalid — clear storage and redirect to login immediately.
+  if (res.status === 401 && typeof window !== 'undefined') {
+    const currentPath = window.location.pathname;
+    // Only redirect if not already on a public/auth page to avoid loops
+    const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password'];
+    if (!publicPaths.some(p => currentPath.startsWith(p))) {
+      localStorage.removeItem('mn_token');
+      localStorage.removeItem('mn_user');
+      window.location.href = '/login';
+      // Throw to stop further execution in the calling code
+      throw new Error('Session expired. Please log in again.');
+    }
+  }
+
   const data = await res.json();
   if (!res.ok) {
     const err: any = new Error(data?.message ?? 'Request failed');

@@ -274,26 +274,38 @@ export default function AdminProfilesPage() {
 
         {/* Footer */}
         {!loading && sorted.length > 0 && (
-          <div className="px-5 py-3.5 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="px-5 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-xs text-gray-400">
               Showing {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, sorted.length)} of {sorted.length} entries
             </p>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                className="h-7 w-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6" /></svg>
-              </button>
-              {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => (
-                <button key={i} onClick={() => setPage(i + 1)}
-                  className={`h-7 w-7 rounded-lg text-xs font-semibold transition ${page === i + 1 ? 'bg-[#1C3B35] text-white' : 'border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
-                  {i + 1}
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                  className="px-4 py-2 rounded-full border border-gray-200 text-[12px] font-semibold text-gray-600 font-poppins hover:border-[#1C3B35] hover:text-[#1C3B35] disabled:opacity-40 transition">
+                  Previous
                 </button>
-              ))}
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                className="h-7 w-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6" /></svg>
-              </button>
-            </div>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(pg => pg === 1 || pg === totalPages || Math.abs(pg - page) <= 1)
+                  .reduce<(number | '…')[]>((acc, pg, i, arr) => {
+                    if (i > 0 && pg - (arr[i - 1] as number) > 1) acc.push('…');
+                    acc.push(pg); return acc;
+                  }, [])
+                  .map((pg, i) =>
+                    pg === '…' ? (
+                      <span key={`e-${i}`} className="text-gray-400 text-sm">…</span>
+                    ) : (
+                      <button key={pg} onClick={() => setPage(pg as number)}
+                        className={`w-8 h-8 rounded-full text-[12px] font-semibold font-poppins transition ${page === pg ? 'bg-[#1C3B35] text-white' : 'border border-gray-200 text-gray-600 hover:border-[#1C3B35] hover:text-[#1C3B35]'}`}>
+                        {pg}
+                      </button>
+                    )
+                  )}
+                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                  className="px-4 py-2 rounded-full border border-gray-200 text-[12px] font-semibold text-gray-600 font-poppins hover:border-[#1C3B35] hover:text-[#1C3B35] disabled:opacity-40 transition">
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -758,6 +758,7 @@ export default function CreateProfilePage() {
                         }`}
                       />
                       {fieldErrors.brothers && <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1"><span>⚠</span>{fieldErrors.brothers}</p>}
+                      {!fieldErrors.brothers && <p className="text-[10px] text-gray-400 mt-0.5">Enter a count between 0 – 20.</p>}
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 mb-1.5">Number of Sisters <span className="text-gray-400 font-normal">(optional)</span></label>
@@ -774,6 +775,7 @@ export default function CreateProfilePage() {
                         }`}
                       />
                       {fieldErrors.sisters && <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1"><span>⚠</span>{fieldErrors.sisters}</p>}
+                      {!fieldErrors.sisters && <p className="text-[10px] text-gray-400 mt-0.5">Enter a count between 0 – 20.</p>}
                     </div>
                   </div>
                 </div>

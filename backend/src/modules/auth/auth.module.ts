@@ -9,10 +9,12 @@ import { MailService } from './mail.service';
 import { SmsService } from './sms.service';
 import { ActivityLogModule } from '../activity-log/activity-log.module';
 import { NotificationModule } from '../notification/notification.module';
+import { PrismaModule } from '../../prisma/prisma.module';
 
 @Module({
   imports: [
     PassportModule,
+    PrismaModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
