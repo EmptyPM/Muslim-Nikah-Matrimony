@@ -34,6 +34,8 @@ export default function AdminUsersPage() {
   const [pwSaving, setPwSaving] = useState(false);
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [deleting, setDeleting] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const PER_PAGE = 10;
@@ -158,10 +160,19 @@ export default function AdminUsersPage() {
     }
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteConfirm) return;
-    setUsers((prev) => prev.filter((u) => u.id !== deleteConfirm.id));
-    setDeleteConfirm(null);
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await adminApi.deleteUser(deleteConfirm.id);
+      setUsers((prev) => prev.filter((u) => u.id !== deleteConfirm.id));
+      setDeleteConfirm(null);
+    } catch (e: any) {
+      setDeleteError(e?.message ?? 'Failed to delete user. Please try again.');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -252,27 +263,7 @@ export default function AdminUsersPage() {
             )}
           </div>
 
-          {/* Role filter (only visible on ALL tab) */}
-          {tab === 'ALL' && (
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-xs text-gray-500 font-medium whitespace-nowrap">Filter:</span>
-              <div className="flex gap-1.5">
-                {(['ALL', 'PARENT', 'ADMIN', 'MARKETING_MANAGER', 'STAFF'] as const).map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => { setTab(r); setPage(1); }}
-                    className={`text-xs px-3 py-1.5 rounded-lg font-semibold border transition ${
-                      tab === r
-                        ? 'bg-[#1C3B35] text-white border-[#1C3B35]'
-                        : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    {r === 'ALL' ? 'All' : r === 'PARENT' ? 'Parents' : r === 'ADMIN' ? 'Admins' : r === 'MARKETING_MANAGER' ? 'Marketing' : 'Staff'}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+
         </div>
 
         {/* Table */}
@@ -459,26 +450,38 @@ export default function AdminUsersPage() {
 
         {/* Footer / Pagination */}
         {!loading && sorted.length > 0 && (
-          <div className="px-5 py-3.5 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="px-5 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-xs text-gray-400">
               Showing {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, sorted.length)} of {sorted.length} entries
             </p>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
-                className="h-7 w-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6" /></svg>
-              </button>
-              {Array.from({ length: totalPages }).map((_, i) => (
-                <button key={i} onClick={() => setPage(i + 1)}
-                  className={`h-7 w-7 rounded-lg text-xs font-semibold transition ${page === i + 1 ? 'bg-[#1C3B35] text-white' : 'border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
-                  {i + 1}
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
+                  className="px-4 py-2 rounded-full border border-gray-200 text-[12px] font-semibold text-gray-600 font-poppins hover:border-[#1C3B35] hover:text-[#1C3B35] disabled:opacity-40 transition">
+                  Previous
                 </button>
-              ))}
-              <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                className="h-7 w-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6" /></svg>
-              </button>
-            </div>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(pg => pg === 1 || pg === totalPages || Math.abs(pg - page) <= 1)
+                  .reduce<(number | '…')[]>((acc, pg, i, arr) => {
+                    if (i > 0 && pg - (arr[i - 1] as number) > 1) acc.push('…');
+                    acc.push(pg); return acc;
+                  }, [])
+                  .map((pg, i) =>
+                    pg === '…' ? (
+                      <span key={`e-${i}`} className="text-gray-400 text-sm">…</span>
+                    ) : (
+                      <button key={pg} onClick={() => setPage(pg as number)}
+                        className={`w-8 h-8 rounded-full text-[12px] font-semibold font-poppins transition ${page === pg ? 'bg-[#1C3B35] text-white' : 'border border-gray-200 text-gray-600 hover:border-[#1C3B35] hover:text-[#1C3B35]'}`}>
+                        {pg}
+                      </button>
+                    )
+                  )}
+                <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                  className="px-4 py-2 rounded-full border border-gray-200 text-[12px] font-semibold text-gray-600 font-poppins hover:border-[#1C3B35] hover:text-[#1C3B35] disabled:opacity-40 transition">
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -600,22 +603,35 @@ export default function AdminUsersPage() {
                 <p className="text-xs text-gray-500 mt-0.5">This action cannot be undone.</p>
               </div>
             </div>
-            <p className="text-sm text-gray-600 mb-5">
+            <p className="text-sm text-gray-600 mb-4">
               Are you sure you want to delete <strong className="text-gray-900">{deleteConfirm.email}</strong>?
               All associated data will be permanently removed.
             </p>
+            {deleteError && (
+              <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 mb-3 flex items-center gap-1.5">
+                <span>⚠</span>{deleteError}
+              </p>
+            )}
             <div className="flex gap-2.5">
               <button
-                onClick={() => setDeleteConfirm(null)}
-                className="flex-1 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition"
+                onClick={() => { setDeleteConfirm(null); setDeleteError(''); }}
+                disabled={deleting}
+                className="flex-1 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
-                className="flex-1 py-2 rounded-xl bg-red-600 text-sm font-semibold text-white hover:bg-red-700 transition"
+                disabled={deleting}
+                className="flex-1 py-2 rounded-xl bg-red-600 text-sm font-semibold text-white hover:bg-red-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                Delete
+                {deleting && (
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                )}
+                {deleting ? 'Deleting…' : 'Delete'}
               </button>
             </div>
           </div>

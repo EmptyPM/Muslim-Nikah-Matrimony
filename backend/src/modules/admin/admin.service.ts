@@ -334,6 +334,44 @@ export class AdminService {
     return { success: true, message: 'Password updated successfully' };
   }
 
+  async deleteUser(adminId: string, id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true, email: true, role: true, childProfiles: { select: { id: true } } },
+    });
+    if (!user) throw new NotFoundException('User not found');
+
+    const profileIds = user.childProfiles.map((p) => p.id);
+
+    await this.prisma.$transaction(async (tx) => {
+      if (profileIds.length > 0) {
+        // Delete chat messages where sender or receiver is one of these profiles
+        await tx.chatMessage.deleteMany({
+          where: { OR: [{ senderProfileId: { in: profileIds } }, { receiverProfileId: { in: profileIds } }] },
+        });
+        // Delete payments
+        await tx.payment.deleteMany({ where: { childProfileId: { in: profileIds } } });
+        // Delete subscriptions
+        await tx.subscription.deleteMany({ where: { childProfileId: { in: profileIds } } });
+        // Delete child profiles
+        await tx.childProfile.deleteMany({ where: { id: { in: profileIds } } });
+      }
+      // Delete notifications
+      await tx.notification.deleteMany({ where: { userId: id } });
+      // Delete the user
+      await tx.user.delete({ where: { id } });
+    });
+
+    this.logger.log(`Admin ${adminId} DELETED user: ${user.email} (${user.role}) with ${profileIds.length} profiles`);
+    this.activityLog.log({
+      actorId: adminId, actorRole: 'ADMIN',
+      action: 'ADMIN_USER_DELETED', category: 'ADMIN',
+      entityId: id, entityLabel: user.email,
+      meta: { role: user.role, profilesDeleted: profileIds.length },
+    });
+    return { success: true, message: `User ${user.email} and all associated data deleted` };
+  }
+
   // ─── Profiles ─────────────────────────────────────────────────
   async getAllProfiles(status?: string) {
     const profiles = await this.prisma.childProfile.findMany({
