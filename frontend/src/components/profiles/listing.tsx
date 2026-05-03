@@ -352,7 +352,8 @@ export default function ProfilesListing() {
     e.preventDefault();
     if (!isLoggedInNow()) { router.push('/login'); return; }
     if (activeProfiles.length === 0) { router.push('/dashboard/profiles'); return; }
-    router.push(`/dashboard/chat?start=${p.id}&name=${encodeURIComponent(p.name ?? '')}`);
+    const myId = selectedProfile?.id ? `&myProfile=${selectedProfile.id}` : '';
+    router.push(`/dashboard/chat?start=${p.id}&name=${encodeURIComponent(p.memberId ?? p.name ?? '')}${myId}`);
   };
 
   const handleViewClick = (p: Profile) => {

@@ -215,20 +215,25 @@ export class ChatService {
       );
     }
 
-    // Fetch partner names for eligible IDs
-    const partnerNames = await this.prisma.childProfile.findMany({
+    // Fetch partner member IDs and names for eligible IDs
+    const partnerProfiles = await this.prisma.childProfile.findMany({
       where: { id: { in: [...eligibleIds] } },
-      select: { id: true, name: true },
+      select: { id: true, name: true, memberId: true },
     });
-    const nameMap = new Map(partnerNames.map(p => [p.id, p.name]));
+    const profileMap = new Map(partnerProfiles.map(p => [p.id, { name: p.name, memberId: p.memberId }]));
 
     // Build sorted flat conversation list (newest first)
     const conversations = [...eligibleIds]
-      .map(id => ({ id, name: nameMap.get(id) ?? 'Unknown', lastMessageAt: latestByPartner.get(id)! }))
+      .map(id => ({
+        id,
+        name: profileMap.get(id)?.name ?? 'Unknown',
+        memberId: profileMap.get(id)?.memberId ?? null,
+        lastMessageAt: latestByPartner.get(id)!,
+      }))
       .sort((a, b) => b.lastMessageAt.getTime() - a.lastMessageAt.getTime());
 
     // Keep legacy sent/received shape for backward-compat (frontend uses it too)
-    const sent     = conversations.map(c => ({ receiverProfileId: c.id, receiverProfile: { id: c.id, name: c.name }, createdAt: c.lastMessageAt }));
+    const sent     = conversations.map(c => ({ receiverProfileId: c.id, receiverProfile: { id: c.id, name: c.name, memberId: c.memberId }, createdAt: c.lastMessageAt }));
     const received = [] as any[];
 
     return { success: true, data: { sent, received, conversations } };

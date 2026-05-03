@@ -359,7 +359,7 @@ export default function AdminProfileEditPage() {
       <div className="flex items-center gap-2 text-sm text-gray-400">
         <Link href="/admin/profiles" className="hover:text-[#1C3B35] transition font-medium">Profiles</Link>
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-        <Link href={`/admin/profiles/${id}`} className="hover:text-[#1C3B35] transition font-medium truncate">{profile.name}</Link>
+        <Link href={`/admin/profiles/${id}`} className="hover:text-[#1C3B35] transition font-medium truncate">{profile.memberId || 'Profile'}</Link>
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
         <span className="text-gray-700 font-medium">Edit</span>
       </div>
@@ -367,7 +367,7 @@ export default function AdminProfileEditPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-[#121514]">Edit Profile — {profile.name}</h1>
+          <h1 className="text-xl font-bold text-[#121514]">Edit Profile</h1>
           <p className="text-sm text-gray-400 mt-0.5">{profile.memberId} · {profile.user?.email}</p>
         </div>
         <div className="flex items-center gap-2">

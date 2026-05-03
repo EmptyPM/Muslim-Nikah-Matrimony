@@ -161,7 +161,7 @@ export default function BrowseMembersPage() {
   });
 
   const handleChat = (p: Profile) => {
-    router.push(`/dashboard/chat?start=${p.id}&name=${encodeURIComponent(p.name ?? '')}`);
+    router.push(`/dashboard/chat?start=${p.id}&name=${encodeURIComponent(p.memberId ?? p.name ?? '')}`);
   };
 
   const handleView = (p: Profile) => {

@@ -202,7 +202,7 @@ export default function ProfileDetailPage() {
       router.push('/login');
       return;
     }
-    router.push(`/dashboard/chat?start=${id}&name=${encodeURIComponent(profile?.name ?? '')}`);
+    router.push(`/dashboard/chat?start=${id}&name=${encodeURIComponent(profile?.memberId ?? profile?.name ?? '')}`);
   };
 
   /* ── Error state ─────────────────────────────────────── */

@@ -91,22 +91,29 @@ export default function ChatPage() {
   // URL params
   const [startId, setStartId] = useState<string | null>(null);
   const [startName, setStartName] = useState<string | null>(null);
+  const [startMyProfile, setStartMyProfile] = useState<string | null>(null);
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const p = new URLSearchParams(window.location.search);
       setStartId(p.get('start'));
       setStartName(p.get('name'));
+      setStartMyProfile(p.get('myProfile'));
     }
   }, []);
 
-  // Load my active profiles
+  // Load my active profiles — honour ?myProfile= param to pre-select the correct sender
   useEffect(() => {
     profileApi.getMyProfiles().then((r) => {
       const active = (r.data ?? []).filter((p: any) => p.status === 'ACTIVE');
       setMyProfiles(active);
-      if (active[0]) setSelectedMyProfile(active[0].id);
+      if (active.length === 0) return;
+      // If a specific profile was requested via URL param, pre-select it
+      const preferred = startMyProfile
+        ? active.find((p: any) => p.id === startMyProfile)
+        : null;
+      setSelectedMyProfile((preferred ?? active[0]).id);
     }).finally(() => setLoading(false));
-  }, []);
+  }, [startMyProfile]);
 
   // Load conversations
   const loadConversations = useCallback((profileId: string) => {
@@ -115,16 +122,20 @@ export default function ChatPage() {
       // Fall back to the old sent+received merge if server is older.
       let all: Conversation[];
       if (Array.isArray(r.data?.conversations) && r.data.conversations.length >= 0) {
-        all = r.data.conversations.map((c: any) => ({ id: c.id, name: c.name ?? 'Unknown' }));
+        all = r.data.conversations.map((c: any) => ({ id: c.id, name: c.memberId || 'Member' }));
       } else {
         all = [
-          ...(r.data?.sent ?? []).map((m: any) => ({ id: m.receiverProfileId, name: m.receiverProfile?.name ?? 'Unknown' })),
-          ...(r.data?.received ?? []).map((m: any) => ({ id: m.senderProfileId, name: m.senderProfile?.name ?? 'Unknown' })),
+          ...(r.data?.sent ?? []).map((m: any) => ({ id: m.receiverProfileId, name: m.receiverProfile?.memberId || 'Member' })),
+          ...(r.data?.received ?? []).map((m: any) => ({ id: m.senderProfileId, name: m.senderProfile?.memberId || 'Member' })),
         ];
       }
-      // Prepend the ?start= target if coming from a profile page
-      if (startId && startName) {
-        all = [{ id: startId, name: startName }, ...all.filter(c => c.id !== startId)];
+      // Prepend the ?start= target if coming from a profile page.
+      // IMPORTANT: prefer the backend-fetched memberId over the URL ?name= param
+      // (the URL param may be a stale email-prefix name like "z")
+      if (startId) {
+        const existing = all.find(c => c.id === startId);
+        const displayName = existing?.name || startName || 'Member';
+        all = [{ id: startId, name: displayName }, ...all.filter(c => c.id !== startId)];
       }
       setConversations(all);
       if (startId) setSelectedChat(startId);
@@ -138,11 +149,14 @@ export default function ChatPage() {
 
   // Load history — always replace with sorted server data
   const loadHistory = useCallback((myId: string, otherId: string) => {
+    if (!myId || !otherId) return;
     chatApi.history(myId, otherId).then(r => {
       const incoming: Message[] = r.data ?? [];
       const sorted = [...incoming].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
       setMessages(sorted);
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    }).catch(() => {
+      // Silently ignore polling errors (transient network issues, server restart, etc.)
     });
   }, []);
 
@@ -451,19 +465,35 @@ export default function ChatPage() {
         </div>
         <div className="flex w-full sm:w-auto items-center gap-2 min-w-0">
           <span className="text-xs text-gray-400 whitespace-nowrap">Chatting as:</span>
-          <select value={selectedMyProfile}
-            onChange={(e) => {
-              // ── Immediately wipe all state from the previous profile ──
-              setConversations([]);
-              setMessages([]);
-              setSelectedChat('');
-              setUnreadCounts({});
-              setMobileShowChat(false);
-              setSelectedMyProfile(e.target.value);
-            }}
-            className="min-w-0 flex-1 sm:flex-none border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-700 bg-white outline-none focus:border-[#1C3B35] transition">
-            {myProfiles.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
+          <div className="relative min-w-0 flex-1 sm:flex-none">
+            <select value={selectedMyProfile}
+              onChange={(e) => {
+                if (startMyProfile) return; // locked when coming from browse page
+                // ── Immediately wipe all state from the previous profile ──
+                setConversations([]);
+                setMessages([]);
+                setSelectedChat('');
+                setUnreadCounts({});
+                setMobileShowChat(false);
+                setSelectedMyProfile(e.target.value);
+              }}
+              disabled={!!startMyProfile}
+              title={startMyProfile ? 'Profile locked — selected from browse page' : undefined}
+              className={`w-full border rounded-xl px-3 py-2 text-sm text-gray-700 bg-white outline-none transition font-mono ${
+                startMyProfile
+                  ? 'border-[#1C3B35]/30 bg-[#1C3B35]/5 cursor-not-allowed opacity-80'
+                  : 'border-gray-200 focus:border-[#1C3B35]'
+              }`}>
+              {myProfiles.map(p => <option key={p.id} value={p.id}>{p.memberId || p.name}</option>)}
+            </select>
+            {startMyProfile && (
+              <span className="absolute right-8 top-1/2 -translate-y-1/2 text-[#1C3B35]/50" title="Profile locked">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                  <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+              </span>
+            )}
+          </div>
           <a href="/profiles"
             className="shrink-0 text-xs bg-[#1C3B35] text-white px-3.5 sm:px-4 py-2 rounded-xl hover:bg-[#15302a] transition font-semibold whitespace-nowrap">
             + Browse
@@ -523,7 +553,7 @@ export default function ChatPage() {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className={`text-sm font-semibold truncate ${unread > 0 ? 'text-gray-900' : active ? 'text-[#1C3B35]' : 'text-gray-700'}`}>{c.name}</p>
+                      <p className={`text-sm font-semibold truncate font-mono ${unread > 0 ? 'text-gray-900' : active ? 'text-[#1C3B35]' : 'text-gray-700'}`}>{c.name}</p>
                       <p className={`text-xs mt-0.5 truncate ${unread > 0 ? 'text-[#1C3B35] font-medium' : 'text-gray-400'}`}>
                         {unread > 0 ? `${unread} new message${unread > 1 ? 's' : ''}` : 'Tap to view messages'}
                       </p>
@@ -561,7 +591,7 @@ export default function ChatPage() {
                   {selectedConvName?.[0]?.toUpperCase() ?? '?'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-800 truncate">{selectedConvName}</p>
+                  <p className="text-sm font-semibold text-gray-800 truncate font-mono">{selectedConvName}</p>
                   <p className="text-xs text-gray-400 flex items-center gap-1">
                     {isTyping
                       ? <><span className="text-[#1C3B35] animate-pulse font-medium">typing…</span></>

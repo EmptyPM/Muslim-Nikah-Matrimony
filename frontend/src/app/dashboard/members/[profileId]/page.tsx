@@ -110,7 +110,7 @@ export default function ProfileDetailPage() {
                   </div>
                 </div>
                 <button
-                  onClick={() => router.push(`/dashboard/chat?start=${profile.id}&name=${encodeURIComponent(profile.name)}`)}
+                  onClick={() => router.push(`/dashboard/chat?start=${profile.id}&name=${encodeURIComponent(profile.memberId ?? profile.name)}`)}
                   className="bg-[#1C3B35] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#15302a] transition flex items-center gap-2 flex-shrink-0">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -216,7 +216,7 @@ export default function ProfileDetailPage() {
           <p className="text-white/70 text-sm mt-0.5">Start a conversation and get to know each other</p>
         </div>
         <button
-          onClick={() => router.push(`/dashboard/chat?start=${profile.id}&name=${encodeURIComponent(profile.name)}`)}
+          onClick={() => router.push(`/dashboard/chat?start=${profile.id}&name=${encodeURIComponent(profile.memberId ?? profile.name)}`)}
           className="bg-[#D4A843] text-[#1C3B35] px-6 py-3 rounded-xl font-bold text-sm hover:bg-[#c49a33] transition flex items-center gap-2 flex-shrink-0">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
