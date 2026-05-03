@@ -51,7 +51,7 @@ function DeleteModal({ name, onConfirm, onClose }: { name: string; onConfirm: ()
           </div>
         </div>
         <p className="text-sm text-gray-600">
-          Are you sure you want to delete <span className="font-semibold text-gray-800">"{name}"</span>? All subscription data will also be removed.
+          Are you sure you want to delete <span className="font-semibold text-gray-800">this profile</span>? All subscription data will also be removed.
         </p>
         <div className="flex gap-3">
           <button onClick={onClose}
@@ -110,8 +110,8 @@ function ViewProfileModal({ profile, onClose }: { profile: any; onClose: () => v
                 <ProfileAvatar gender={profile.gender} name={profile.name} className="w-full h-full" size={56} />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-white">{profile.name}</h2>
-                {profile.memberId && <p className="text-xs text-white/60 font-mono mt-0.5">{profile.memberId}</p>}
+                <h2 className="text-lg font-bold text-white">{profile.memberId ?? '—'}</h2>
+
                 <div className="flex items-center gap-2 mt-1.5">
                   {age && <span className="text-xs text-white/70">{age} yrs</span>}
                   {profile.gender && <span className="text-xs bg-white/15 text-white/80 px-2 py-0.5 rounded-full capitalize">{profile.gender.toLowerCase()}</span>}
@@ -352,8 +352,7 @@ export default function ProfilesPage() {
                       <ProfileAvatar gender={p.gender} name={p.name} className="w-full h-full" size={40} />
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-800">{p.name}</p>
-                      {p.memberId && <p className="text-xs text-gray-400 font-mono">{p.memberId}</p>}
+                      <p className="font-semibold text-gray-800 font-mono">{p.memberId ?? '—'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">

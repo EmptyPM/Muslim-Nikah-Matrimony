@@ -90,6 +90,11 @@ export class AdminController {
     return this.service.changeUserPassword(id, body.newPassword);
   }
 
+  @Delete('users/:id')
+  deleteUser(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.service.deleteUser(user.userId, id);
+  }
+
   @Get('profiles')
   profiles(@Query('status') status?: string) { return this.service.getAllProfiles(status); }
 

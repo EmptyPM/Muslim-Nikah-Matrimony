@@ -184,6 +184,8 @@ export const adminApi = {
     request<any>(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   changeUserPassword: (id: string, newPassword: string) =>
     request<any>(`/admin/users/${id}/password`, { method: 'PUT', body: JSON.stringify({ newPassword }) }),
+  deleteUser: (id: string) =>
+    request<any>(`/admin/users/${id}`, { method: 'DELETE' }),
   profiles: (status?: string) => request<any>(`/admin/profiles${status ? `?status=${status}` : ''}`),
   getProfile: (id: string) => request<any>(`/admin/profiles/${id}`),
   updateProfileStatus: (id: string, status: string, reason?: string) =>
