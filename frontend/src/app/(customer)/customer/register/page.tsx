@@ -252,11 +252,13 @@ function Step4({ data, onChange }: { data: Record<string, string>; onChange: (e:
             <label className="text-sm font-medium text-gray-600">Number of Brothers</label>
             <input type="number" name="brothers" min="0" max="20" value={data.brothers || "0"} onChange={onChange}
               className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm outline-none focus:border-[#1B6B4A] focus:ring-2 focus:ring-[#1B6B4A]/20 transition" />
+            <p className="text-[10px] text-gray-400">Enter a count between 0 – 20.</p>
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-gray-600">Number of Sisters</label>
             <input type="number" name="sisters" min="0" max="20" value={data.sisters || "0"} onChange={onChange}
               className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm outline-none focus:border-[#1B6B4A] focus:ring-2 focus:ring-[#1B6B4A]/20 transition" />
+            <p className="text-[10px] text-gray-400">Enter a count between 0 – 20.</p>
           </div>
         </div>
       </div>
