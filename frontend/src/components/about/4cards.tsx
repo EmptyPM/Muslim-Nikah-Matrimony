@@ -1,6 +1,6 @@
 import React from "react";
 import { ShieldCheck, Globe, Lock, BadgeCheck } from "lucide-react";
-
+//ss
 const CARDS = [
   {
     icon: BadgeCheck,
