@@ -485,7 +485,7 @@ export default function SelectPlanPage() {
           </div>
 
           {/* RIGHT: Order Summary */}
-          <div className="space-y-4">
+          <div className="space-y-4 min-w-0">
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="bg-[#1B3A2D] text-white text-center py-4">
                 <h3 className="font-bold text-lg tracking-wide">ORDER SUMMARY</h3>
@@ -555,18 +555,23 @@ export default function SelectPlanPage() {
                       : profiles[0];
                     const isPending = activeProfile?.status === 'PAYMENT_PENDING';
                     return activeProfile ? (
-                      <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2 text-xs">
-                        <svg className="w-3.5 h-3.5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                      <div className="flex items-start gap-2 bg-white/10 rounded-lg px-3 py-2 text-xs min-w-0">
+                        <svg className="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
                           <polyline points="20 6 9 17 4 12" />
                         </svg>
-                        <span className="text-white/80">Profile:
+                        <span className="text-white/80 min-w-0 flex-1 break-words leading-snug">
+                          Profile:
                           {activeProfile?.name && activeProfile.name.trim().length > 1 && (
-                            <strong className="text-white ml-1">{activeProfile.name}</strong>
+                            <strong className="text-white ml-1 font-semibold">{activeProfile.name}</strong>
                           )}
                           {(() => {
                             try {
                               const u = JSON.parse(localStorage.getItem('mn_user') ?? '{}');
-                              return u.email ? <span className="ml-1 text-white/60 font-mono text-[10px]">{u.email}</span> : null;
+                              return u.email ? (
+                                <span className="ml-1 text-white/60 font-mono text-[10px] break-all">
+                                  {u.email}
+                                </span>
+                              ) : null;
                             } catch { return null; }
                           })()}
                           {isPending && (
