@@ -143,13 +143,18 @@ export class ChildProfileService {
   }
 
   private async generateNextMemberId() {
-    const lastProfile = await this.prisma.childProfile.findFirst({
+    // Fetch all USR- member IDs and find the true numeric max in JS,
+    // because PostgreSQL string sort treats 'USR-9' > 'USR-10' which
+    // causes collisions once any 2-digit (or higher) ID exists.
+    const allProfiles = await this.prisma.childProfile.findMany({
       where: { memberId: { startsWith: 'USR-' } },
-      orderBy: { memberId: 'desc' },
       select: { memberId: true },
     });
-    const lastNum = Number(lastProfile?.memberId?.replace('USR-', '') ?? '0');
-    return `USR-${lastNum + 1}`;
+    const maxNum = allProfiles.reduce((max, p) => {
+      const num = Number(p.memberId.replace('USR-', ''));
+      return isNaN(num) ? max : Math.max(max, num);
+    }, 0);
+    return `USR-${maxNum + 1}`;
   }
 
   async update(userId: string, profileId: string, dto: UpdateChildProfileDto) {
